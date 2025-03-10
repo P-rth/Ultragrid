@@ -15,7 +15,7 @@ int main() {
     // 11   single player ultragrid
     // 12   multiplayer ultragrid
 
-    supergrid_start_singleplayer();
+    ultragrid_start_singleplayer();
 
 
     return 0;
