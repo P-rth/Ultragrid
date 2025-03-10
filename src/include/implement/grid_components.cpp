@@ -3,6 +3,7 @@
 #include "ftxui/dom/elements.hpp"  // for text, Element, operator|, borderEmpty, inverted
 #include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
 #include "ftxui/dom/node.hpp"      // for Render
+#include <cmath>
 
 
 using namespace ftxui;
@@ -44,13 +45,22 @@ class TicTacToeButton {
                 if (!event.is_mouse()) {
                     // Handle keyboard input (Enter/Space) when focused
                     if (button->Focused()) {
-                        if (event == Event::Return) {
+                        if (event == Event::Return || event == Event::Character(" ")) {
                             if (gridValue == 0) {
                                 gridValue = 1;
                                 return true;
                             }
                         }
                     }
+
+                    // Let parent handle arrow key navigation
+                    if (event == Event::ArrowLeft ||
+                                            event == Event::ArrowRight ||
+                                            event == Event::ArrowUp ||
+                                            event == Event::ArrowDown) {
+                                            return false;
+                                        }
+
                     return false;
                 }
 
@@ -90,8 +100,15 @@ class TicTacToeButton {
                     if (isPressed && gridValue == 0) {
                         gridValue = 1;
                         content = content | bgcolor(ftxui::Color::Red);
+
                     } else {
+                        if (gridValue == 0){
                         content = content | inverted;  // Highlight focused button
+                        } else if (gridValue == 1){
+                            content = content | color(ftxui::Color::Red);
+                        } else if (gridValue == 2){
+                            content = content | color(ftxui::Color::Blue);
+                        }
                     }
                 } else if (isPressed && gridValue == 0) {
                     content = content | bgcolor(ftxui::Color::Red);
@@ -109,10 +126,13 @@ class TicTacToeButton {
 
 class SmallGrid {
     private:
-        std::vector<std::vector<int>> grid;    // 0 = empty, 1 = X, 2 = O
         std::vector<std::vector<std::unique_ptr<TicTacToeButton>>> buttons;
+        int selected_x = 0;  // Shared x coordinate for horizontal navigation
+        int selected_y = 0;  // y coordinate for vertical navigation
 
     public:
+        std::vector<std::vector<int>> grid;    // 0 = empty, 1 = X, 2 = O
+
         SmallGrid() {
             grid = {{0, 0, 0},
                     {0, 0, 0},
@@ -130,10 +150,10 @@ class SmallGrid {
 
         ftxui::Component makeGridComponent() {
             using namespace ftxui;
-            auto container = Container::Vertical({});
+            auto container = Container::Vertical({},&selected_y);
 
             for (int i = 0; i < 3; i++) {
-                auto row = Container::Horizontal({});
+                auto row = Container::Horizontal({},&selected_x);
                 for (int j = 0; j < 3; j++) {
                     // Use the TicTacToeButton class
                     row->Add(buttons[i][j]->makeButton());
@@ -141,7 +161,7 @@ class SmallGrid {
                     // Add vertical separator except after last column
                     if (j < 2) {
                         row->Add(Renderer([]{
-                            return separator();
+                            return separatorCharacter("·");
                         }));
                     }
                 }
@@ -151,7 +171,7 @@ class SmallGrid {
                 // Add horizontal separator except after last row
                 if (i < 2) {
                     container->Add(Renderer([]{
-                        return separator();
+                        return separatorCharacter("·");
                     }));
                 }
             }
@@ -167,4 +187,56 @@ class SmallGrid {
                 default: return " ";
             }
         }
+};
+
+
+
+
+class LargeGrid {
+private:
+    std::vector<std::vector<std::unique_ptr<SmallGrid>>> grids;
+    int selected_x = 0;
+    int selected_y = 0;
+
+public:
+    LargeGrid() {
+        grids.resize(3);
+        for(int i = 0; i < 3; i++) {
+            grids[i].resize(3);
+            for(int j = 0; j < 3; j++) {
+                grids[i][j] = std::make_unique<SmallGrid>();
+            }
+        }
+    }
+
+    ftxui::Component makeGridComponent() {
+        using namespace ftxui;
+        auto container = Container::Vertical({}, &selected_y);
+
+        for(int i = 0; i < 3; i++) {
+            auto row = Container::Horizontal({}, &selected_x);
+
+            for(int j = 0; j < 3; j++) {
+                row->Add(grids[i][j]->makeGridComponent());
+
+                // Add vertical separator between SmallGrids
+                if (j < 2) {
+                    row->Add(Renderer([]{
+                        return separatorDouble();
+                    }));
+                }
+            }
+
+            container->Add(row);
+
+            // Add horizontal separator between rows
+            if (i < 2 ) {
+                container->Add(Renderer([]{
+                    return separatorDouble();
+                }));
+            }
+        }
+
+        return container;
+    }
 };

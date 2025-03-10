@@ -2,7 +2,6 @@
 #include "headers/startmenu.hpp"
 #include "headers/ultragrid.hpp"
 #include <iostream>
-//#include "main.h"
 
 int main() {
 

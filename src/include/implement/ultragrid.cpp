@@ -14,11 +14,11 @@ using namespace std::chrono_literals;
 
 
 
-void supergrid_start_singleplayer() {
+void ultragrid_start_singleplayer() {
     using namespace ftxui;
     auto screen = ScreenInteractive::Fullscreen();
 
-    SmallGrid grid;
+    LargeGrid grid;
 
     auto container = grid.makeGridComponent();
 
