@@ -7,6 +7,16 @@
 using namespace ftxui;
 using namespace std::chrono_literals;
 
+#include <ftxui/component/component.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <vector>
+#include <string>
+
+
+#include <iostream>
+#include <sstream>
+#include "ftxui/dom/flexbox_config.hpp"  // for FlexboxConfig, FlexboxConfig::JustifyContent, FlexboxConfig::JustifyContent::Center, FlexboxConfig::JustifyContent::FlexEnd, FlexboxConfig::JustifyContent::SpaceBetween
+
 
 
 void RenderStartScreen() {
@@ -20,7 +30,7 @@ void RenderStartScreen() {
 
         vbox({
 
-        
+
             filler(),
             nonWrappingParagraph(art),
             text(" "),
@@ -33,7 +43,7 @@ void RenderStartScreen() {
 
         text("v1")
     });
-    
+
     ftxui::Render(start_screen, document1);
     std::string out_screen_string = start_screen.ToString();
 

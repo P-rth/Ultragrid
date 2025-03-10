@@ -4,24 +4,54 @@
 
 
 
+using namespace ftxui;
+#include <chrono>
 
-//create the main ui for the startup menu 
+#include <functional>  // for function
+#include <memory>      // for shared_ptr, allocator, __shared_ptr_access
+#include <string>      // for string, basic_string
+#include <vector>      // for vector
+
+#include "ftxui/component/captured_mouse.hpp"  // for ftxui
+#include <cstdlib> // For system()
+
+
+#include "ftxui/component/animation.hpp"       // for BackOut, Duration
+#include "ftxui/component/component.hpp"       // for Menu, Renderer, Vertical
+#include "ftxui/component/component_base.hpp"  // for ComponentBase
+#include "ftxui/component/component_options.hpp"  // for MenuOption, UnderlineOption
+#include "ftxui/component/mouse.hpp"              // for ftxui
+#include "ftxui/component/screen_interactive.hpp"  // for Component, ScreenInteractive
+#include "ftxui/dom/elements.hpp"  // for text, Element, operator|, borderEmpty, inverted
+#include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
+
+#include "ftxui/dom/node.hpp"      // for Render
+#include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/terminal.hpp>
+
+
+using namespace ftxui;
+using namespace std::chrono_literals;
+
+
+
+//create the main ui for the startup menu
 int StartupUI() {
     int shift = 0;
     auto screen = ScreenInteractive::Fullscreen();
     std::string displayedart = art;
     int return_mode = 0;
-    
+
 
 
     // MENU _-----------------------------------------------------------
     int menu_selected = 1;
-    
+
     const std::vector<std::string> menu_entries = {
         "NxN",
-        
+
         "UltraGrid",
-        
+
         "Settings",
     };
 
@@ -46,7 +76,7 @@ int StartupUI() {
         }
         return element;
     };
-    
+
     auto menu = Menu(&menu_entries, &menu_selected, option);
 
 
@@ -60,7 +90,7 @@ int StartupUI() {
     auto button = Button(&button_label, screen.ExitLoopClosure());
 
 
-   
+
 
     // ultragridstart ----------------------------------------------------------------
     ButtonOption buttonoptions = ButtonOption::Animated();
@@ -71,8 +101,8 @@ int StartupUI() {
         auto element = text(s.label)| hcenter |vcenter;
 
         if (s.focused) {
-            element = element | 
-            
+            element = element |
+
             color(LinearGradient()
             .Angle(45+shift)
             .Stop(Color::DeepPink1)
@@ -80,37 +110,37 @@ int StartupUI() {
         }
         return element;
     };
-    
-    auto start_multiplayer = Button("Start Multiplayer", [&]{return_mode = 12; screen.ExitLoopClosure()();}, buttonoptions)
-    | size(WIDTH, EQUAL, 20) | size(HEIGHT, EQUAL, 3) | hcenter |flex_grow; 
 
-    auto start_singleplayer = Button("Start Singleplayer", [&]{return_mode = 11; screen.ExitLoopClosure()();}, buttonoptions) 
-    | size(WIDTH, EQUAL, 20) | size(HEIGHT, EQUAL, 3) | hcenter |flex_grow; 
+    auto start_multiplayer = Button("Start Multiplayer", [&]{return_mode = 12; screen.ExitLoopClosure()();}, buttonoptions)
+    | size(WIDTH, EQUAL, 20) | size(HEIGHT, EQUAL, 3) | hcenter |flex_grow;
+
+    auto start_singleplayer = Button("Start Singleplayer", [&]{return_mode = 11; screen.ExitLoopClosure()();}, buttonoptions)
+    | size(WIDTH, EQUAL, 20) | size(HEIGHT, EQUAL, 3) | hcenter |flex_grow;
 
 
 
     auto start_buttons = Container::Horizontal({
     start_singleplayer,
     start_multiplayer
-    }) | flex_grow; 
+    }) | flex_grow;
 
     auto start_container = Container::Vertical({
     start_buttons,
-    });  
+    });
 
-    auto lorel_ipsum = 
+    auto lorel_ipsum =
     Renderer(start_container,[&] {
         return vbox({
             paragraphAlignCenter("Ultragrid - Play on a 3×3 grid of smaller boards, where each move determines the next board your opponent must play on"),
             text(""),
             paragraphAlignCenter(" Win by claiming three boards in a line "),
-            filler(), 
-            start_container->Render(), 
+            filler(),
+            start_container->Render(),
             filler(),
 
-        }) | border;  
+        }) | border;
     });
-        
+
 
     // -- Layout
     // -----------------------------------------------------------------
@@ -122,7 +152,7 @@ int StartupUI() {
         &menu_selected);
 
 
-    
+
     auto main_container = Container::Vertical({
         menu,
         tab_content,
@@ -139,7 +169,7 @@ int StartupUI() {
             nonWrappingParagraph(art2) | hcenter,
             separatorEmpty(),
             menu->Render(),
-            }) 
+            })
             | color(LinearGradient()
             .Angle(45+shift)
             .Stop(Color::DeepPink1)
@@ -161,7 +191,7 @@ int StartupUI() {
         //     filler(),
         // });
 
-        
+
     });
 
 
@@ -192,7 +222,7 @@ int StartupUI() {
         screen.Post(Event::Custom);
       }
     });
-  
+
 
 
 // -- Loop -----------------------------------------------------------
@@ -203,13 +233,3 @@ int StartupUI() {
 
     return return_mode;                //nxn 0 ultragrid 1 settings 2
 }
-
-
-
-
-
-
-    
-
-  
-

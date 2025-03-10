@@ -1,6 +1,11 @@
 #include "../headers/helpers.hpp"
 
 
+#include <sstream>
+#include "ftxui/dom/flexbox_config.hpp"  // for FlexboxConfig, FlexboxConfig::JustifyContent, FlexboxConfig::JustifyContent::Center, FlexboxConfig::JustifyContent::FlexEnd, FlexboxConfig::JustifyContent::SpaceBetween
+#include <iostream>
+
+
 void ExecuteCommand(const std::string& command) {
     int ret_code = system(command.c_str());
     if (ret_code != 0) {
@@ -16,13 +21,15 @@ Elements Split(std::string the_text) {
     Elements output;
     std::stringstream ss(the_text);
     std::string word;
-  
+
     while (ss >> word)  // This correctly extracts words separated by spaces/newlines.
       output.push_back(text(word));
-  
+
     return output;
   }
-  
+
+
+
 Element nonWrappingParagraph(std::string the_text) {
 Elements lines;
 for (auto& line : Split(std::move(the_text)))  // Missing parenthesis was fixed
