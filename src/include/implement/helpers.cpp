@@ -14,9 +14,23 @@ void ExecuteCommand(const std::string& command) {
 }
 
 
+void largegrid_to_cout(largegrid_val grid4d){
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            for(int k = 0; k < 3; k++) {
+                for(int l = 0; l < 3; l++) {
+                    std::cout << grid4d[i][j][k][l] << " ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout <<"**********************"<< std::endl;
+        }
+    }
+};
+
+
 
 namespace ftxui{
-
 Elements Split(std::string the_text) {
     Elements output;
     std::stringstream ss(the_text);

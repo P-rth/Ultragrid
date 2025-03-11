@@ -1,22 +1,33 @@
+
 #include "ftxui/component/component.hpp"       // for Menu, Renderer, Vertical
 #include "ftxui/component/mouse.hpp"              // for ftxui
 #include "ftxui/dom/elements.hpp"  // for text, Element, operator|, borderEmpty, inverted
 #include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
 #include "ftxui/dom/node.hpp"      // for Render
 #include <cmath>
+#include <vector>
+
+#include "./headers/helpers.hpp"
 
 
 using namespace ftxui;
 using namespace std::chrono_literals;
 
 
+
+using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;  //a vector for all x*y buttons to store things like disabled, win/blink  format :: [bool disabled, bool win, bool blink]
+
+
+
 class TicTacToeButton {
     private:
+
         int& gridValue;
         int row;
         int col;
         bool isHovered = false;
         bool isPressed = false;
+        bool click_release_edge = false;
         ftxui::Component button;
         ftxui::Box box_;
 
@@ -28,9 +39,9 @@ class TicTacToeButton {
             }
         };
 
+
     public:
-    TicTacToeButton(int& gridRef, int r, int c)
-            : gridValue(gridRef), row(r), col(c) {}
+        TicTacToeButton(int& gridRef, int r, int c): gridValue(gridRef), row(r), col(c) {}
 
         ftxui::Component makeButton() {
             using namespace ftxui;
@@ -41,52 +52,37 @@ class TicTacToeButton {
                 }
             });
 
-            button |= CatchEvent([this,button](Event event) {
-                if (!event.is_mouse()) {
-                    // Handle keyboard input (Enter/Space) when focused
-                    if (button->Focused()) {
-                        if (event == Event::Return || event == Event::Character(" ")) {
-                            if (gridValue == 0) {
-                                gridValue = 1;
-                                return true;
-                            }
-                        }
-                    }
-
-                    // Let parent handle arrow key navigation
-                    if (event == Event::ArrowLeft ||
-                                            event == Event::ArrowRight ||
-                                            event == Event::ArrowUp ||
-                                            event == Event::ArrowDown) {
-                                            return false;
-                                        }
-
-                    return false;
-                }
+            button |= CatchEvent([this,button](Event event) {                           //function should be true if event is handled otherwise false
 
                 const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
+
+                // Update hover state and focus when changed
+                if (mouse_in_button != isHovered) {
+                    button->TakeFocus();
+                    isHovered = mouse_in_button;
+                    return true;
+                }
 
                 // Handle different mouse states
                 if (event.mouse().button == Mouse::Left) {
                     if (event.mouse().motion == Mouse::Pressed) {
                         if (mouse_in_button) {
                             isPressed = true;
-                            button->TakeFocus(); // Take focus when clicked
+                            return true;
+                        }
+                        else {
+                            isPressed = false;
+                        }
+                    } else if (event.mouse().motion == Mouse::Released && mouse_in_button) {
+                        if (isPressed) {
+                            click_release_edge = true;
                             return true;
                         }
                     } else if (event.mouse().motion == Mouse::Released) {
-                        if (isPressed) {
-                            isPressed = false;
-                            return true;
-                        }
+                        isPressed = false;
                     }
                 }
 
-                // Update hover state
-                if (mouse_in_button != isHovered) {
-                    isHovered = mouse_in_button;
-                    return true;
-                }
                 return false;
             });
 
@@ -97,25 +93,24 @@ class TicTacToeButton {
 
                 // Different visual states
                 if (button->Focused()) {  // Check if button has focus
-                    if (isPressed && gridValue == 0) {
+                    if (click_release_edge && gridValue == 0) {
                         gridValue = 1;
                         content = content | bgcolor(ftxui::Color::Red);
 
                     } else {
-                        if (gridValue == 0){
-                        content = content | inverted;  // Highlight focused button
+                        if (isPressed && gridValue == 0) {
+                            content = content | bgcolor(ftxui::Color::OrangeRed1);           //when click is held and not let go
+                        } else if (gridValue == 0) {
+                            content = content | bgcolor(ftxui::Color::GrayDark);            //when mouse is hovered over button
                         } else if (gridValue == 1){
                             content = content | color(ftxui::Color::Red);
                         } else if (gridValue == 2){
                             content = content | color(ftxui::Color::Blue);
                         }
                     }
-                } else if (isPressed && gridValue == 0) {
-                    content = content | bgcolor(ftxui::Color::Red);
-                } else if (isHovered && gridValue == 0) {
-                    content = content | bgcolor(ftxui::Color::GrayDark);
                 }
 
+                click_release_edge = false;
                 return content | reflect(box_);
             });
         }
@@ -147,6 +142,10 @@ class SmallGrid {
                 }
             }
         }
+
+        std::vector<std::vector<int>>* getGridRef() {
+                return &grid;
+            }
 
         ftxui::Component makeGridComponent() {
             using namespace ftxui;
@@ -191,52 +190,91 @@ class SmallGrid {
 
 
 
-
 class LargeGrid {
-private:
-    std::vector<std::vector<std::unique_ptr<SmallGrid>>> grids;
-    int selected_x = 0;
-    int selected_y = 0;
+    private:
+        std::vector<std::vector<std::unique_ptr<SmallGrid>>> grids;
+        int selected_x = 0;
+        int selected_y = 0;
 
-public:
-    LargeGrid() {
-        grids.resize(3);
-        for(int i = 0; i < 3; i++) {
-            grids[i].resize(3);
-            for(int j = 0; j < 3; j++) {
-                grids[i][j] = std::make_unique<SmallGrid>();
+
+
+        largegrid_val_ptr grids_val;
+
+
+    public:
+        LargeGrid() {
+
+            grids_val.resize(3);
+            for(int i = 0; i < 3; i++) {
+                grids_val[i].resize(3);
             }
+
+
+            grids.resize(3);
+            for(int i = 0; i < 3; i++) {
+                grids[i].resize(3);
+                for(int j = 0; j < 3; j++) {
+                    grids[i][j] = std::make_unique<SmallGrid>();
+                    grids_val[i][j] = grids[i][j]->getGridRef();
+                }
+            }
+
         }
-    }
 
-    ftxui::Component makeGridComponent() {
-        using namespace ftxui;
-        auto container = Container::Vertical({}, &selected_y);
+        int getValue(int bigRow, int bigCol, int smallRow, int smallCol) const {
+            return (*grids_val[bigRow][bigCol])[smallRow][smallCol];
+        }
 
-        for(int i = 0; i < 3; i++) {
-            auto row = Container::Horizontal({}, &selected_x);
 
-            for(int j = 0; j < 3; j++) {
-                row->Add(grids[i][j]->makeGridComponent());
 
-                // Add vertical separator between SmallGrids
-                if (j < 2) {
-                    row->Add(Renderer([]{
+        largegrid_val get4DArray() const {
+            // Initialize 4D vector with size 3x3x3x3
+
+            largegrid_val values(3,
+                std::vector<std::vector<std::vector<int>>>(3,
+                    std::vector<std::vector<int>>(3,
+                        std::vector<int>(3))));
+
+
+            // Copy values from pointers to the 4D array
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    // Dereference the pointer to get the 2D grid of the small grid
+                    values[i][j] = *grids_val[i][j];
+                }
+            }
+            return values;
+        }
+
+        ftxui::Component makeGridComponent() {
+            using namespace ftxui;
+            auto container = Container::Vertical({}, &selected_y);
+
+            for(int i = 0; i < 3; i++) {
+                auto row = Container::Horizontal({}, &selected_x);
+
+                for(int j = 0; j < 3; j++) {
+                    row->Add(grids[i][j]->makeGridComponent());
+
+                    // Add vertical separator between SmallGrids
+                    if (j < 2) {
+                        row->Add(Renderer([]{
+                            return separatorDouble();
+                        }));
+                    }
+                }
+
+                container->Add(row);
+
+                // Add horizontal separator between rows
+                if (i < 2 ) {
+                    container->Add(Renderer([]{
                         return separatorDouble();
                     }));
                 }
             }
 
-            container->Add(row);
-
-            // Add horizontal separator between rows
-            if (i < 2 ) {
-                container->Add(Renderer([]{
-                    return separatorDouble();
-                }));
-            }
+            return container;
         }
 
-        return container;
-    }
 };

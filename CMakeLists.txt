@@ -32,13 +32,13 @@ file(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_executable(TicTacTournament ${SRC_FILES})
 
 # Include directories
-target_include_directories(TicTacTournament PUBLIC 
+target_include_directories(TicTacTournament PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src/include
 )
 
 # Link libraries
 target_link_libraries(TicTacTournament
-  
+
   PRIVATE ftxui::screen
   PRIVATE ftxui::dom
   PRIVATE ftxui::component
