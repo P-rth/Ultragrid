@@ -19,118 +19,132 @@ using namespace std::chrono_literals;
 
 using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;  //a vector for all x*y buttons to store options format :: [int disabled, int blink]  --> 0/1 (int used so that can add more features in future)
 
-
 class TicTacToeButton {
-    private:
+private:
+    int& gridValue;
+    int row;
+    int col;
+    bool isHovered = false;
+    bool isPressed = false;
+    bool click_release_edge = false;
+    std::vector<int>& options;
+    ftxui::Box box_;
+    ftxui::Component button;
 
-        int& gridValue;
-        int row;
-        int col;
-        bool isHovered = false;
-        bool isPressed = false;
-        bool click_release_edge = false;
-        std::vector<int>& options;
-        ftxui::Component button;
-        ftxui::Box box_;
+    std::string getSymbolString(int value) const {
+        switch(value) {
+            case 1: return "X";
+            case 2: return "O";
+            default: return " ";
+        }
+    }
 
-        std::string getSymbolString(int value) const {
-            switch(value) {
-                case 1: return "X";
-                case 2: return "O";
-                default: return " ";
+    ftxui::Component makeButton() {
+        bool isdisabled = options[0] == 1;  // 0 = not disabled
+        std::cout << isdisabled << " OPTION" << std::endl;
+
+        using namespace ftxui;
+
+        auto buttonComponent = Button(" ", [this, isdisabled] {
+            if (!isdisabled && gridValue == 0) {
+                gridValue = 1;
             }
-        };
+        });
 
+        buttonComponent |= CatchEvent([this, buttonComponent, isdisabled](Event event) {
+            const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
 
-    public:
-        TicTacToeButton(int& gridRef, int r, int c,std::vector<int>& options ): gridValue(gridRef), row(r), col(c), options(options) {}
+            if (isdisabled && buttonComponent->Focused()) {
+                return false;
+            }
 
-        ftxui::Component makeButton() {
+            if (mouse_in_button != isHovered) {
+                buttonComponent->TakeFocus();
+                isHovered = mouse_in_button;
+                return true;
+            }
 
-            bool isdisabled = options[0] == 1;  // 0 = not disabled
-            std::cout<<isdisabled<<"OPTION"<<std::endl;
-            using namespace ftxui;
-
-            auto button = Button(" ", [this, isdisabled] {
-                        if (!isdisabled && gridValue == 0) {              // Only allow clicks if not disabled
-                            gridValue = 1;
-                        }
-                    });
-
-            button |= CatchEvent([this,button,isdisabled](Event event) {                           //function should be true if event is handled otherwise false
-
-                const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
-
-
-                if (isdisabled && button->Focused()) {
-                    return false;               //do nothing if disabled
-                }
-
-                // Update hover state and focus when changed
-                if (mouse_in_button != isHovered ) {
-                    button->TakeFocus();
-                    isHovered = mouse_in_button;
-                    return true;
-                }
-
-                // Handle different mouse states
-                if (event.mouse().button == Mouse::Left ) {
-                    if (event.mouse().motion == Mouse::Pressed) {
-                        if (mouse_in_button) {
-                            isPressed = true;
-                            return true;
-                        }
-                        else {
-                            isPressed = false;
-                        }
-                    } else if (event.mouse().motion == Mouse::Released && mouse_in_button) {
-                        if (isPressed) {
-                            click_release_edge = true;
-                            return true;
-                        }
-                    } else if (event.mouse().motion == Mouse::Released) {
+            if (event.mouse().button == Mouse::Left) {
+                if (event.mouse().motion == Mouse::Pressed) {
+                    if (mouse_in_button) {
+                        isPressed = true;
+                        return true;
+                    }
+                    else {
                         isPressed = false;
                     }
                 }
-
-                return false;
-            });
-
-            return Renderer(button, [this,button,isdisabled] {
-                auto content = text(getSymbolString(gridValue)) |
-                            center |
-                            size(WIDTH, EQUAL, 3);
-
-                if (isdisabled) {
-                    content = content | dim | bgcolor(ftxui::Color::Grey35);
-                }
-
-                // Different visual states
-                if (button->Focused() && !isdisabled) {  // Check if button has focus
-                    if (click_release_edge && gridValue == 0) {
-                        gridValue = 1;
-                        content = content | bgcolor(ftxui::Color::Red);
-
-                    } else {
-                        if (isPressed && gridValue == 0) {
-                            content = content | bgcolor(ftxui::Color::OrangeRed1);           //when click is held and not let go
-                        } else if (gridValue == 0) {
-                            content = content | bgcolor(ftxui::Color::GrayDark);            //when mouse is hovered over button
-                        } else if (gridValue == 1){
-                            content = content | color(ftxui::Color::Red);
-                        } else if (gridValue == 2){
-                            content = content | color(ftxui::Color::Blue);
-                        }
+                else if (event.mouse().motion == Mouse::Released && mouse_in_button) {
+                    if (isPressed) {
+                        click_release_edge = true;
+                        return true;
                     }
                 }
+                else if (event.mouse().motion == Mouse::Released) {
+                    isPressed = false;
+                }
+            }
 
-                click_release_edge = false;
-                return content | reflect(box_);
-            });
+            return false;
+        });
+
+        return Renderer(buttonComponent, [this, buttonComponent, isdisabled] {
+            auto content = text(getSymbolString(gridValue)) |
+                          center |
+                          size(WIDTH, EQUAL, 3);
+
+            if (isdisabled) {
+                content = content | dim | bgcolor(ftxui::Color::Grey35);
+            }
+
+            if (buttonComponent->Focused() && !isdisabled) {
+                if (click_release_edge && gridValue == 0) {
+                    gridValue = 1;
+                    content = content | bgcolor(ftxui::Color::Red);
+                }
+                else {
+                    if (isPressed && gridValue == 0) {
+                        content = content | bgcolor(ftxui::Color::OrangeRed1);
+                    }
+                    else if (gridValue == 0) {
+                        content = content | bgcolor(ftxui::Color::GrayDark);
+                    }
+                    else if (gridValue == 1) {
+                        content = content | color(ftxui::Color::Red);
+                    }
+                    else if (gridValue == 2) {
+                        content = content | color(ftxui::Color::Blue);
+                    }
+                }
+            }
+
+            click_release_edge = false;
+            return content | reflect(box_);
+        });
+    }
+
+public:
+    TicTacToeButton(int& gridRef, int r, int c, std::vector<int>& opts)
+        : gridValue(gridRef), row(r), col(c), options(opts) {
+        button = makeButton();
+    }
+
+    void TakeFocus_btn() {
+        //std::cout << "TicTacToeButton: Attempting to take focus" << std::endl;
+        if (!button) {
+            std::cout << "TicTacToeButton: Button component is null!" << std::endl;
+            return;
         }
+        button->TakeFocus();
+    }
 
+    ftxui::Component GetButton() const {
+        return button;
+    }
+
+    int GetRow() const { return row; }
+    int GetCol() const { return col; }
 };
-
 
 
 class SmallGrid {
@@ -164,6 +178,12 @@ class SmallGrid {
                 return &grid;
             }
 
+        void takefocus_sm_grid(int x = 1, int y = 1) {
+
+        //  std::cout << "Taking focus at (" << x << ", " << y << ")  smallgrid" << std::endl;
+            buttons[x][y]->TakeFocus_btn();
+        }
+
         ftxui::Component makeGridComponent() {
             using namespace ftxui;
             auto container = Container::Vertical({},&selected_y);
@@ -172,7 +192,7 @@ class SmallGrid {
                 auto row = Container::Horizontal({},&selected_x);
                 for (int j = 0; j < 3; j++) {
                     // Use the TicTacToeButton class
-                    row->Add(buttons[i][j]->makeButton());
+                    row->Add(buttons[i][j]->GetButton());
 
                     // Add vertical separator except after last column
                     if (j < 2) {
@@ -248,7 +268,6 @@ class LargeGrid {
         }
 
 
-
         largegrid_val get4DArray() const {
             // Initialize 4D vector with size 3x3x3x3
 
@@ -297,6 +316,11 @@ class LargeGrid {
             }
 
             return container;
+        }
+
+        void takefocus_big(int x = 1, int y = 1,int z = 1,int w = 1) {
+            //std::cout << "Taking focus at (" << x << ", " << y << ", " << z << ", " << w << ")" << std::endl;
+            grids[x][y]->takefocus_sm_grid(y,w);
         }
 
 };

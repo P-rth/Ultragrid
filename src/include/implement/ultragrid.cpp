@@ -25,6 +25,12 @@ void ultragrid_start_singleplayer() {
 
     container -> Add(Button("EXIT",screen.ExitLoopClosure()));
 
+    container -> Add(Button("focus",[&grid]() {
+        std::cout << "focus" << std::endl;
+        grid.takefocus_big(0,0,0,0);
+    }));
+
+
 
     auto renderer = Renderer(container, [&] {
         return vbox({
