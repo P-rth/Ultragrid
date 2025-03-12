@@ -5,6 +5,8 @@
 #include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
 #include "ftxui/dom/node.hpp"      // for Render
 #include <cmath>
+#include <iostream>
+#include <ostream>
 #include <vector>
 
 #include "./headers/helpers.hpp"
@@ -15,8 +17,7 @@ using namespace std::chrono_literals;
 
 
 
-using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;  //a vector for all x*y buttons to store things like disabled, win/blink  format :: [bool disabled, bool win, bool blink]
-
+using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;  //a vector for all x*y buttons to store options format :: [int disabled, int blink]  --> 0/1 (int used so that can add more features in future)
 
 
 class TicTacToeButton {
@@ -28,6 +29,7 @@ class TicTacToeButton {
         bool isHovered = false;
         bool isPressed = false;
         bool click_release_edge = false;
+        std::vector<int>& options;
         ftxui::Component button;
         ftxui::Box box_;
 
@@ -41,30 +43,38 @@ class TicTacToeButton {
 
 
     public:
-        TicTacToeButton(int& gridRef, int r, int c): gridValue(gridRef), row(r), col(c) {}
+        TicTacToeButton(int& gridRef, int r, int c,std::vector<int>& options ): gridValue(gridRef), row(r), col(c), options(options) {}
 
         ftxui::Component makeButton() {
+
+            bool isdisabled = options[0] == 1;  // 0 = not disabled
+            std::cout<<isdisabled<<"OPTION"<<std::endl;
             using namespace ftxui;
 
-            auto button = Button(" ", [this] {
-                if (gridValue == 0) {
-                    gridValue = 1;
-                }
-            });
+            auto button = Button(" ", [this, isdisabled] {
+                        if (!isdisabled && gridValue == 0) {              // Only allow clicks if not disabled
+                            gridValue = 1;
+                        }
+                    });
 
-            button |= CatchEvent([this,button](Event event) {                           //function should be true if event is handled otherwise false
+            button |= CatchEvent([this,button,isdisabled](Event event) {                           //function should be true if event is handled otherwise false
 
                 const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
 
+
+                if (isdisabled && button->Focused()) {
+                    return false;               //do nothing if disabled
+                }
+
                 // Update hover state and focus when changed
-                if (mouse_in_button != isHovered) {
+                if (mouse_in_button != isHovered ) {
                     button->TakeFocus();
                     isHovered = mouse_in_button;
                     return true;
                 }
 
                 // Handle different mouse states
-                if (event.mouse().button == Mouse::Left) {
+                if (event.mouse().button == Mouse::Left ) {
                     if (event.mouse().motion == Mouse::Pressed) {
                         if (mouse_in_button) {
                             isPressed = true;
@@ -86,13 +96,17 @@ class TicTacToeButton {
                 return false;
             });
 
-            return Renderer(button, [this,button] {
+            return Renderer(button, [this,button,isdisabled] {
                 auto content = text(getSymbolString(gridValue)) |
                             center |
                             size(WIDTH, EQUAL, 3);
 
+                if (isdisabled) {
+                    content = content | dim | bgcolor(ftxui::Color::Grey35);
+                }
+
                 // Different visual states
-                if (button->Focused()) {  // Check if button has focus
+                if (button->Focused() && !isdisabled) {  // Check if button has focus
                     if (click_release_edge && gridValue == 0) {
                         gridValue = 1;
                         content = content | bgcolor(ftxui::Color::Red);
@@ -124,11 +138,14 @@ class SmallGrid {
         std::vector<std::vector<std::unique_ptr<TicTacToeButton>>> buttons;
         int selected_x = 0;  // Shared x coordinate for horizontal navigation
         int selected_y = 0;  // y coordinate for vertical navigation
+        int& disabled;
+        std::vector<int> buttonOptions;
 
     public:
         std::vector<std::vector<int>> grid;    // 0 = empty, 1 = X, 2 = O
 
-        SmallGrid() {
+        SmallGrid(int& d) : disabled(d) , buttonOptions{d} {
+
             grid = {{0, 0, 0},
                     {0, 0, 0},
                     {0, 0, 0}};
@@ -138,7 +155,7 @@ class SmallGrid {
             for(int i = 0; i < 3; i++) {
                 buttons[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    buttons[i][j] = std::make_unique<TicTacToeButton>(grid[i][j], i, j);
+                    buttons[i][j] = std::make_unique<TicTacToeButton>(grid[i][j], i, j, buttonOptions);
                 }
             }
         }
@@ -199,6 +216,7 @@ class LargeGrid {
 
 
         largegrid_val_ptr grids_val;
+        TicTacToeButton_Options_Grid grid_states;
 
 
     public:
@@ -214,7 +232,11 @@ class LargeGrid {
             for(int i = 0; i < 3; i++) {
                 grids[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    grids[i][j] = std::make_unique<SmallGrid>();
+                    int dis = 0;
+                    if (i == 1 && j==1){
+                        dis = 1;
+                    }
+                    grids[i][j] = std::make_unique<SmallGrid>(dis);
                     grids_val[i][j] = grids[i][j]->getGridRef();
                 }
             }
