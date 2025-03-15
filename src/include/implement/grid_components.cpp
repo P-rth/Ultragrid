@@ -304,6 +304,20 @@ class LargeGrid {
             //mainComponent->Refresh();
         }
 
+        void setoptions_invert(int bigRow, int bigCol, std::vector<int> op, std::vector<int> op_inv) {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (i == bigRow && j == bigCol) {
+                        grid_options[i][j] = op;
+                    }
+                    else {
+                        grid_options[i][j] = op_inv;
+                    }
+                }
+            }
+            //mainComponent->Refresh();
+        }
+
         Component makeGridComponent() {
             using namespace ftxui;
             auto container = Container::Vertical({}, &selected_y);
