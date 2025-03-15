@@ -27,27 +27,34 @@ void ultragrid_start_singleplayer() {
 
 
     // Create a vertical container for all components
-    auto main_container = Container::Vertical({});
+    auto main_container = Container::Vertical({
+        gridholder,
+        Button("EXIT", screen.ExitLoopClosure()),
 
-    // Add the grid component
-    main_container->Add(gridholder);
+        Button("focus", [&gridcmp]() {
+            std::cout << "focus" << std::endl;
+            gridcmp.takefocus_big(0,0,0,0);
+        }),
 
-    // Add buttons
-    main_container->Add(Button("EXIT", screen.ExitLoopClosure()));
+        Button("bigicon", [&gridcmp,&grid, &gridholder]() {
+            std::cout << "bigicon" << std::endl;
+            gridcmp.setbigicon_big(2,2,2);
+            // Update the container
+            grid->Detach();
+            grid = gridcmp.getComponent();              //update the main big grid
+            gridholder->Add(grid);
+        }),
 
-    main_container->Add(Button("focus", [&gridcmp]() {
-        std::cout << "focus" << std::endl;
-        gridcmp.takefocus_big(0,0,0,0);
-    }));
+        Button("disable", [&gridcmp,&grid, &gridholder]() {
+            std::cout << "disable" << std::endl;
+            gridcmp.setoptions(0, 0, std::vector<int> {1});
+            // Update the container
+            grid->Detach();
+            grid = gridcmp.getComponent();              //update the main big grid
+            gridholder->Add(grid);
+        })
 
-    main_container->Add(Button("bigicon", [&gridcmp,&grid, &gridholder]() {
-        std::cout << "bigicon" << std::endl;
-        gridcmp.setbigicon_big(2,2,2);
-        // Update the container
-        grid->Detach();
-        grid = gridcmp.getComponent();              //update the main big grid
-        gridholder->Add(grid);
-    }));
+    });
 
     auto renderer = Renderer(main_container, [&] {
         return vbox({

@@ -1,4 +1,3 @@
-
 #include "ftxui/component/component.hpp"       // for Menu, Renderer, Vertical
 #include "ftxui/component/mouse.hpp"              // for ftxui
 #include "ftxui/dom/elements.hpp"  // for text, Element, operator|, borderEmpty, inverted
@@ -6,6 +5,7 @@
 #include "ftxui/dom/node.hpp"      // for Render
 #include <cmath>
 #include <ftxui/component/component_base.hpp>
+#include <ftxui/component/component_options.hpp>
 #include <iostream>
 #include <ostream>
 #include <vector>
@@ -18,8 +18,7 @@ using namespace ftxui;
 using namespace std::chrono_literals;
 
 
-
-using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;  //a vector for all x*y buttons to store options format :: [int disabled, int blink]  --> 0/1 (int used so that can add more features in future)
+using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;
 
 class TicTacToeButton {
     private:
@@ -42,18 +41,19 @@ class TicTacToeButton {
         }
 
         ftxui::Component makeButton() {
-            bool isdisabled = options[0] == 1;  // 0 = not disabled
-            std::cout << isdisabled << " OPTION" << std::endl;
-
             using namespace ftxui;
 
-            auto buttonComponent = Button(" ", [this, isdisabled] {
+            auto buttonComponent = Button(" ", [this] {
+                bool isdisabled = options[0] == 1;  // Check current disabled state
                 if (!isdisabled && gridValue == 0) {
                     gridValue = 1;
                 }
-            });
+            },
+            ButtonOption::Animated(Color::Red)
+            );
 
-            buttonComponent |= CatchEvent([this, buttonComponent, isdisabled](Event event) {
+            buttonComponent |= CatchEvent([this, buttonComponent](Event event) {
+                bool isdisabled = options[0] == 1;  // Check current disabled state
                 const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
 
                 if (isdisabled && mouse_in_button) {
@@ -63,7 +63,6 @@ class TicTacToeButton {
                 if (mouse_in_button != isHovered) {
                     buttonComponent->TakeFocus();
                     isHovered = mouse_in_button;
-                // return true;
                 }
 
                 if (event.mouse().button == Mouse::Left) {
@@ -90,7 +89,9 @@ class TicTacToeButton {
                 return false;
             });
 
-            return Renderer(buttonComponent, [this, buttonComponent, isdisabled] {
+            return Renderer(buttonComponent, [this, buttonComponent] {
+                bool isdisabled = options[0] == 1;  // Check current disabled state
+
                 auto content = text(getSymbolString(gridValue)) |
                             center |
                             size(WIDTH, EQUAL, 3);
@@ -100,9 +101,7 @@ class TicTacToeButton {
                         content = content | dim | bgcolor(ftxui::Color::Grey50);
                     } else {
                         content = content | dim | bgcolor(ftxui::Color::Grey30);
-
                     }
-
                 }
 
                 if (buttonComponent->Focused() && !isdisabled) {
@@ -138,7 +137,6 @@ class TicTacToeButton {
         }
 
         void TakeFocus_btn() {
-            //std::cout << "TicTacToeButton: Attempting to take focus" << std::endl;
             if (!button) {
                 std::cout << "TicTacToeButton: Button component is null!" << std::endl;
                 return;
@@ -154,35 +152,31 @@ class TicTacToeButton {
         int GetCol() const { return col; }
 };
 
-
 class SmallGrid {
     private:
         std::vector<std::vector<std::unique_ptr<TicTacToeButton>>> buttons;
         int selected_x = 0;
         int selected_y = 0;
-        int& disabled;
         int bigicon = 0;
-        std::vector<int> buttonOptions;
-        ftxui::Component gridComponent; // Store the grid component
+        std::vector<int>* buttonOptions;
+        ftxui::Component gridComponent;
 
     public:
         std::vector<std::vector<int>> grid;
 
-        SmallGrid(int& d) : disabled(d), buttonOptions{d} {
+        SmallGrid(std::vector<int>* values) : buttonOptions(values) {
             grid = {{0, 0, 0},
                    {0, 0, 0},
                    {0, 0, 0}};
 
-            // Initialize buttons
             buttons.resize(3);
             for(int i = 0; i < 3; i++) {
                 buttons[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    buttons[i][j] = std::make_unique<TicTacToeButton>(grid[i][j], i, j, buttonOptions);
+                    buttons[i][j] = std::make_unique<TicTacToeButton>(grid[i][j], i, j, *buttonOptions);
                 }
             }
 
-            // Initialize grid component
             gridComponent = makeGridComponent();
         }
 
@@ -194,14 +188,12 @@ class SmallGrid {
             buttons[x][y]->TakeFocus_btn();
         }
 
-        // Getter for the grid component
         ftxui::Component getGridComponent() {
             return gridComponent;
         }
 
         void setbigicon(int bigicon_set) {
             this->bigicon = bigicon_set;
-            // Recreate grid component when bigicon changes
             gridComponent = makeGridComponent();
         }
 
@@ -253,102 +245,94 @@ class SmallGrid {
         }
 };
 
-
-
-
 class LargeGrid {
     private:
         std::vector<std::vector<std::unique_ptr<SmallGrid>>> grids;
         int selected_x = 0;
         int selected_y = 0;
         Component mainComponent;
-
-
-
         largegrid_val_ptr grids_val;
-        TicTacToeButton_Options_Grid grid_states;
-
+        TicTacToeButton_Options_Grid grid_options;
 
     public:
         LargeGrid() {
+            grid_options.resize(3);
+            for(int i = 0; i < 3; i++) {
+                grid_options[i].resize(3);
+                for(int j = 0; j < 3; j++) {
+                    grid_options[i][j] = {0,0};
+                }
+            }
 
             grids_val.resize(3);
             for(int i = 0; i < 3; i++) {
                 grids_val[i].resize(3);
             }
 
-
             grids.resize(3);
             for(int i = 0; i < 3; i++) {
                 grids[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    int dis = 0;
-                    if (i == 1 && j==1){
-                        dis = 1;
-                    }
-                    grids[i][j] = std::make_unique<SmallGrid>(dis);
+                    grids[i][j] = std::make_unique<SmallGrid>(&grid_options[i][j]);
                     grids_val[i][j] = grids[i][j]->getGridRef();
                 }
             }
 
             mainComponent = makeGridComponent();
-
         }
 
         int getValue(int bigRow, int bigCol, int smallRow, int smallCol) const {
             return (*grids_val[bigRow][bigCol])[smallRow][smallCol];
         }
 
-
         largegrid_val get4DArray() const {
-            // Initialize 4D vector with size 3x3x3x3
-
             largegrid_val values(3,
                 std::vector<std::vector<std::vector<int>>>(3,
                     std::vector<std::vector<int>>(3,
                         std::vector<int>(3))));
 
-
-            // Copy values from pointers to the 4D array
             for(int i = 0; i < 3; i++) {
                 for(int j = 0; j < 3; j++) {
-                    // Dereference the pointer to get the 2D grid of the small grid
                     values[i][j] = *grids_val[i][j];
                 }
             }
             return values;
         }
 
-        Component makeGridComponent() {
-                    using namespace ftxui;
-                    auto container = Container::Vertical({}, &selected_y);
-
-                    for(int i = 0; i < 3; i++) {
-                        auto row = Container::Horizontal({}, &selected_x);
-
-                        for(int j = 0; j < 3; j++) {
-                            row->Add(grids[i][j]->getGridComponent());
-
-                            if (j < 2) {
-                                row->Add(Renderer([]{
-                                    return separatorDouble();
-                                }));
-                            }
-                        }
-
-                        container->Add(row);
-
-                        if (i < 2 ) {
-                            container->Add(Renderer([]{
-                                return separatorDouble();
-                            }));
-                        }
-                    }
-
-                    mainComponent = container; // Store the component
-                    return mainComponent;
+        void setoptions(int bigRow, int bigCol, std::vector<int> op) {
+            grid_options[bigRow][bigCol] = op;
+            //mainComponent->Refresh();
         }
 
+        Component makeGridComponent() {
+            using namespace ftxui;
+            auto container = Container::Vertical({}, &selected_y);
+
+            for(int i = 0; i < 3; i++) {
+                auto row = Container::Horizontal({}, &selected_x);
+
+                for(int j = 0; j < 3; j++) {
+                    row->Add(grids[i][j]->getGridComponent());
+
+                    if (j < 2) {
+                        row->Add(Renderer([]{
+                            return separatorDouble();
+                        }));
+                    }
+                }
+
+                container->Add(row);
+
+                if (i < 2) {
+                    container->Add(Renderer([]{
+                        return separatorDouble();
+                    }));
+                }
+            }
+
+            mainComponent = container;
+            return mainComponent;
+        }
 
         ftxui::Component getComponent() {
             return mainComponent;
@@ -356,12 +340,10 @@ class LargeGrid {
 
         void setbigicon_big(int x = 0, int y = 0, int icon = 0) {
             grids[x][y]->setbigicon(icon);
-            makeGridComponent(); // Rebuild the component
+            makeGridComponent();
         }
 
         void takefocus_big(int x = 1, int y = 1,int z = 1,int w = 1) {
-            //std::cout << "Taking focus at (" << x << ", " << y << ", " << z << ", " << w << ")" << std::endl;
             grids[x][y]->takefocus_sm_grid(y,w);
         }
-
 };
