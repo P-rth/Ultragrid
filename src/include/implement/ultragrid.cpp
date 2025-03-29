@@ -47,11 +47,8 @@ void ultragrid_start_singleplayer() {
 
         Button("disable", [&gridcmp,&grid, &gridholder]() {
             std::cout << "disable" << std::endl;
-            gridcmp.setoptions(0, 0, std::vector<int> {1});
-            // Update the container
-            grid->Detach();
-            grid = gridcmp.getComponent();              //update the main big grid
-            gridholder->Add(grid);
+            gridcmp.setoptions_invert(0, 0, std::vector<int> {0}, std::vector<int> {1});
+
         })
 
     });
