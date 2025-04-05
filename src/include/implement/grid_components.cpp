@@ -4,12 +4,12 @@
 #include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
 #include "ftxui/dom/node.hpp"      // for Render
 #include <cmath>
-#include <ftxui/component/component_base.hpp>
-#include <ftxui/component/component_options.hpp>
+#include "ftxui/component/component_base.hpp"
+#include "ftxui/component/component_options.hpp"
 #include <iostream>
 #include <ostream>
-#include <vector>
 
+#include "ftxui/component/event.hpp"  // for Event definition
 #include "./headers/helpers.hpp"
 #include "./headers/art.hpp"
 
@@ -17,8 +17,8 @@
 using namespace ftxui;
 using namespace std::chrono_literals;
 
-
-using TicTacToeButton_Options_Grid = std::vector<std::vector<std::vector<int>>>;
+using TicTacToeButton_Options = int[2];
+using TicTacToeButton_Options_Grid = int[3][3][2];
 
 class TicTacToeButton {
     private:
@@ -28,7 +28,7 @@ class TicTacToeButton {
         bool isHovered = false;
         bool isPressed = false;
         bool click_release_edge = false;
-        std::vector<int>& options;
+        TicTacToeButton_Options& options;
         ftxui::Box box_;
         ftxui::Component button;
 
@@ -52,7 +52,7 @@ class TicTacToeButton {
             ButtonOption::Animated(Color::Red)
             );
 
-            buttonComponent |= CatchEvent([this, buttonComponent](Event event) {
+            buttonComponent |= ftxui::CatchEvent([this, buttonComponent](ftxui::Event event) {
                 bool isdisabled = options[0] == 1;  // Check current disabled state
                 const bool mouse_in_button = box_.Contain(event.mouse().x, event.mouse().y);
 
@@ -94,7 +94,8 @@ class TicTacToeButton {
 
                 auto content = text(getSymbolString(gridValue)) |
                             center |
-                            size(WIDTH, EQUAL, 3);
+                            size(WIDTH, EQUAL, 3)|
+                            size(HEIGHT, EQUAL, 1);
 
                 if (isdisabled) {
                     if (buttonComponent->Focused()) {
@@ -131,7 +132,7 @@ class TicTacToeButton {
         }
 
     public:
-        TicTacToeButton(int& gridRef, int r, int c, std::vector<int>& opts)
+        TicTacToeButton(int& gridRef, int r, int c, TicTacToeButton_Options& opts)
             : gridValue(gridRef), row(r), col(c), options(opts) {
             button = makeButton();
         }
@@ -154,34 +155,37 @@ class TicTacToeButton {
 
 class SmallGrid {
     private:
-        std::vector<std::vector<std::unique_ptr<TicTacToeButton>>> buttons;
+        TicTacToeButton* buttons[3][3];
         int selected_x = 0;
         int selected_y = 0;
         int bigicon = 0;
-        std::vector<int>* buttonOptions;
+        TicTacToeButton_Options* buttonOptions;
         ftxui::Component gridComponent;
 
     public:
-        std::vector<std::vector<int>> grid;
+        int grid[3][3];
 
-        SmallGrid(std::vector<int>* values) : buttonOptions(values) {
-            grid = {{0, 0, 0},
-                   {0, 0, 0},
-                   {0, 0, 0}};
-
-            buttons.resize(3);
+        SmallGrid(TicTacToeButton_Options* values) : buttonOptions(values) {
             for(int i = 0; i < 3; i++) {
-                buttons[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    buttons[i][j] = std::make_unique<TicTacToeButton>(grid[i][j], i, j, *buttonOptions);
+                    grid[i][j] = 0;
+                    buttons[i][j] = new TicTacToeButton(grid[i][j], i, j, *buttonOptions);
                 }
             }
 
             gridComponent = makeGridComponent();
         }
 
-        std::vector<std::vector<int>>* getGridRef() {
-            return &grid;
+        ~SmallGrid() {
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    delete buttons[i][j];
+                }
+            }
+        }
+
+        int (*getGridRef())[3] {
+            return &grid[0];
         }
 
         void takefocus_sm_grid(int x = 1, int y = 1) {
@@ -212,7 +216,7 @@ class SmallGrid {
 
                         if (j < 2) {
                             row->Add(Renderer([]{
-                                return separatorCharacter("·");
+                                return separator();
                             }));
                         }
                     }
@@ -221,7 +225,7 @@ class SmallGrid {
 
                     if (i < 2) {
                         container->Add(Renderer([]{
-                            return separatorCharacter("·");
+                            return separator();
                         }));
                     }
                 }
@@ -247,75 +251,78 @@ class SmallGrid {
 
 class LargeGrid {
     private:
-        std::vector<std::vector<std::unique_ptr<SmallGrid>>> grids;
+        SmallGrid* grids[3][3];
         int selected_x = 0;
         int selected_y = 0;
         Component mainComponent;
-        largegrid_val_ptr grids_val;
+        int grids_val[3][3][3][3];
         TicTacToeButton_Options_Grid grid_options;
 
     public:
         LargeGrid() {
-            grid_options.resize(3);
             for(int i = 0; i < 3; i++) {
-                grid_options[i].resize(3);
                 for(int j = 0; j < 3; j++) {
-                    grid_options[i][j] = {0,0};
-                }
-            }
-
-            grids_val.resize(3);
-            for(int i = 0; i < 3; i++) {
-                grids_val[i].resize(3);
-            }
-
-            grids.resize(3);
-            for(int i = 0; i < 3; i++) {
-                grids[i].resize(3);
-                for(int j = 0; j < 3; j++) {
-                    grids[i][j] = std::make_unique<SmallGrid>(&grid_options[i][j]);
-                    grids_val[i][j] = grids[i][j]->getGridRef();
+                    grid_options[i][j][0] = 0;
+                    grid_options[i][j][1] = 0;
+                    grids[i][j] = new SmallGrid(&grid_options[i][j]);
                 }
             }
 
             mainComponent = makeGridComponent();
         }
 
-        int getValue(int bigRow, int bigCol, int smallRow, int smallCol) const {
-            return (*grids_val[bigRow][bigCol])[smallRow][smallCol];
-        }
-
-        largegrid_val get4DArray() const {
-            largegrid_val values(3,
-                std::vector<std::vector<std::vector<int>>>(3,
-                    std::vector<std::vector<int>>(3,
-                        std::vector<int>(3))));
-
+        ~LargeGrid() {
             for(int i = 0; i < 3; i++) {
                 for(int j = 0; j < 3; j++) {
-                    values[i][j] = *grids_val[i][j];
+                    delete grids[i][j];
                 }
             }
-            return values;
         }
 
-        void setoptions(int bigRow, int bigCol, std::vector<int> op) {
-            grid_options[bigRow][bigCol] = op;
-            //mainComponent->Refresh();
+        int getValue(int bigRow, int bigCol, int smallRow, int smallCol) const {
+            auto* smallGrid = grids[bigRow][bigCol];
+            int (*gridRef)[3] = smallGrid->getGridRef();
+            return gridRef[smallRow][smallCol];
         }
 
-        void setoptions_invert(int bigRow, int bigCol, std::vector<int> op, std::vector<int> op_inv) {
+
+
+        void get4DArray(int (*out)[3][3][3]) const {
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    auto* smallGrid = grids[i][j];
+                    if (!smallGrid) {
+                        throw std::runtime_error("Null grid reference");
+                    }
+
+                    int (*gridRef)[3] = smallGrid->getGridRef();
+                    for(int k = 0; k < 3; k++) {
+                        for(int l = 0; l < 3; l++) {
+                            out[i][j][k][l] = gridRef[k][l];
+                        }
+                    }
+                }
+            }
+        }
+
+        void setoptions(int bigRow, int bigCol, TicTacToeButton_Options op) {
+            grid_options[bigRow][bigCol][0] = op[0];
+            grid_options[bigRow][bigCol][1] = op[1];
+        }
+
+        void setoptions_invert(int bigRow, int bigCol, TicTacToeButton_Options op, TicTacToeButton_Options op_inv) {
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     if (i == bigRow && j == bigCol) {
-                        grid_options[i][j] = op;
+                        grid_options[i][j][0] = op[0];
+                        grid_options[i][j][1] = op[1];
                     }
                     else {
-                        grid_options[i][j] = op_inv;
+                        grid_options[i][j][0] = op_inv[0];
+                        grid_options[i][j][1] = op_inv[1];
                     }
                 }
             }
-            //mainComponent->Refresh();
         }
 
         Component makeGridComponent() {
@@ -344,8 +351,8 @@ class LargeGrid {
                 }
             }
 
-            mainComponent = container;
-            return mainComponent;
+            mainComponent =container;
+            return container | border;
         }
 
         ftxui::Component getComponent() {

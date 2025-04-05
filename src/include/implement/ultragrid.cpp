@@ -21,14 +21,12 @@ void ultragrid_start_singleplayer() {
     using namespace ftxui;
     auto screen = ScreenInteractive::Fullscreen();
 
-    LargeGrid gridcmp;
+    LargeGrid gridcmp;                             //gridcomponent
     Component grid = gridcmp.getComponent();
     Component gridholder = Container::Vertical({grid});
 
 
-    // Create a vertical container for all components
-    auto main_container = Container::Vertical({
-        gridholder,
+    Component options = Container::Vertical({
         Button("EXIT", screen.ExitLoopClosure()),
 
         Button("focus", [&gridcmp]() {
@@ -41,28 +39,43 @@ void ultragrid_start_singleplayer() {
             gridcmp.setbigicon_big(2,2,2);
             // Update the container
             grid->Detach();
-            grid = gridcmp.getComponent();              //update the main big grid
+            grid = gridcmp.makeGridComponent();              //update the main big grid
             gridholder->Add(grid);
         }),
 
         Button("disable", [&gridcmp,&grid, &gridholder]() {
             std::cout << "disable" << std::endl;
-            gridcmp.setoptions_invert(0, 0, std::vector<int> {0}, std::vector<int> {1});
+            int op[1] = {0};
+            int op_inv[1] = {1};
+            gridcmp.setoptions_invert(0, 0, op, op_inv);
 
         })
 
     });
 
+
+
+    // Create a vertical container for all components
+    auto main_container = Container::Horizontal({
+        gridholder | borderDouble,
+        options,
+
+    });
+
+
     auto renderer = Renderer(main_container, [&] {
         return vbox({
             text("Tic-Tac-Toe") | bold | center,
             separator(),
-            main_container->Render() | border | hcenter | vcenter,
+            main_container->Render() | flex,
         });
     });
 
+
+
     screen.Loop(renderer);
 
-    largegrid_val grid4d = gridcmp.get4DArray();
+    int grid4d[3][3][3][3];  // Declare the array first
+    gridcmp.get4DArray(grid4d);  // Pass the array to be filled
     largegrid_to_cout(grid4d);
 }

@@ -17,7 +17,7 @@ set(FETCHCONTENT_QUIET OFF)
 
 FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/arthursonzogni/ftxui.git
-  GIT_TAG        v5.0.0
+  GIT_TAG        main
   GIT_PROGRESS   TRUE
   GIT_SHALLOW    TRUE
   EXCLUDE_FROM_ALL
@@ -33,8 +33,7 @@ add_executable(TicTacTournament ${SRC_FILES})
 
 # Include directories
 target_include_directories(TicTacTournament PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-)
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/include)
 
 # Link libraries
 target_link_libraries(TicTacTournament

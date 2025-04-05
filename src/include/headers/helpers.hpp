@@ -4,9 +4,9 @@
 #include <ftxui/component/component.hpp>
 #include <cstdlib>
 
-using smallgrid_val_ptr = std::vector<std::vector<int>>*;
-using largegrid_val_ptr = std::vector<std::vector<smallgrid_val_ptr>>;
-using largegrid_val = std::vector<std::vector<std::vector<std::vector<int>>>>;
+using smallgrid_val_ptr = int (*)[3][3];
+using largegrid_val_ptr = int (*)[3][3][3][3];
+using largegrid_val = int[3][3][3][3];
 
 
 // Function to execute terminal commands safely
