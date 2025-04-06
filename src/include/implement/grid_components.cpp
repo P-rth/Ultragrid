@@ -50,6 +50,9 @@ class TicTacToeButton {
                 bool isdisabled = options[0] == 1;  // Check current disabled state
                 if (!isdisabled && gridValue == 0) {
                     gridValue = variables::currentPlayer;
+                    if (callbacks::onUpdate) {
+                        callbacks::onUpdate();
+                    }
                 }
             }
             );
@@ -109,18 +112,17 @@ class TicTacToeButton {
 
                 if (buttonComponent->Focused() && !isdisabled) {
                     if (click_release_edge && gridValue == 0) {
-
-
                         gridValue = variables::currentPlayer;
                         std::cout << "Player " << gridValue << " clicked!" << std::endl;
+                        if (callbacks::onUpdate) {
+                            callbacks::onUpdate();
+                        }
                         if (gridValue == 1) {
                             content = content | bgcolor(ftxui::Color::Red);
                         }
                         else if (gridValue == 2) {
                             content = content | bgcolor(ftxui::Color::Blue);
                         }
-
-
                     }
                     else {
                         if (isPressed && gridValue == 0) {
