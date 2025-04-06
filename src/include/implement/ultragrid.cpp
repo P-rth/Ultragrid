@@ -4,10 +4,13 @@
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 #include <ftxui/screen/string.hpp>
 #include <iostream>
 #include <string>
 #include "./headers/helpers.hpp"
+#include "../headers/game_globals.hpp"
+
 
 
 #include "./implement/grid_components.cpp"
@@ -16,66 +19,103 @@ using namespace ftxui;
 using namespace std::chrono_literals;
 
 
+class UltragridGameManagerMultiplayer {
+public:
+    UltragridGameManagerMultiplayer(ftxui::ScreenInteractive& );
 
-void ultragrid_start_singleplayer() {
-    using namespace ftxui;
-    auto screen = ScreenInteractive::Fullscreen();
+    // Core game functions
+    void StartGame();
+    void HandleMove(int bigRow, int bigCol, int smallRow, int smallCol);
+    void SwitchTurn();
+    bool IsGameOver() const;
+    int* ActiveSmallgrid();
+    Component renderer;
 
-    LargeGrid gridcmp;                             //gridcomponent
-    Component grid = gridcmp.getComponent();
-    Component gridholder = Container::Vertical({grid});
+    // UI
+    ftxui::Component GetUI();
+
+    LargeGrid grid;
 
 
-    Component options = Container::Vertical({
+private:
+    // Game state
+    ftxui::ScreenInteractive& screen;
+
+    Component gridcmp = grid.getComponent();
+    Component gridholder = Container::Vertical({gridcmp});
+
+    bool gameActive;
+
+
+    Component options;
+    Component main_container;
+
+    // UI Components
+    ftxui::Component mainContainer;
+    ftxui::Component gridComponent;
+    ftxui::Component infoPanel;
+
+    // UI setup
+    void SetupUI();
+    void UpdateUI();
+};
+
+
+void UltragridGameManagerMultiplayer::SetupUI() {
+    options = Container::Vertical({
         Button("EXIT", screen.ExitLoopClosure()),
+    });
 
-        Button("focus", [&gridcmp]() {
-            std::cout << "focus" << std::endl;
-            gridcmp.takefocus_big(0,0,0,0);
-        }),
-
-        Button("bigicon", [&gridcmp,&grid, &gridholder]() {
-            std::cout << "bigicon" << std::endl;
-            gridcmp.setbigicon_big(2,2,2);
-            // Update the container
-            grid->Detach();
-            grid = gridcmp.makeGridComponent();              //update the main big grid
-            gridholder->Add(grid);
-        }),
-
-        Button("disable", [&gridcmp,&grid, &gridholder]() {
-            std::cout << "disable" << std::endl;
-            int op[1] = {0};
-            int op_inv[1] = {1};
-            gridcmp.setoptions_invert(0, 0, op, op_inv);
-
-        })
+    main_container = Container::Horizontal({
+        gridholder ,
+        Renderer([&]{return separatorEmpty(); }),
+        options ,
 
     });
 
 
-
-    // Create a vertical container for all components
-    auto main_container = Container::Horizontal({
-        gridholder | borderDouble,
-        options,
-
-    });
-
-
-    auto renderer = Renderer(main_container, [&] {
+    renderer = Renderer(main_container, [&] {
         return vbox({
             text("Tic-Tac-Toe") | bold | center,
             separator(),
-            main_container->Render() | flex,
-        });
+            vbox({
+                filler(),
+                main_container->Render() | hcenter ,
+                filler(),
+            }) |flex | border,
+
+
+        }) | flex_grow;
     });
+}
+
+void UltragridGameManagerMultiplayer::UpdateUI() {
+    std::cout << "Updating UI..." << std::endl;
+    if (variables::currentPlayer == 1) {
+        variables::currentPlayer = 2;
+    } else {
+        variables::currentPlayer = 1;
+    }
+}
+
+UltragridGameManagerMultiplayer::UltragridGameManagerMultiplayer(ftxui::ScreenInteractive& s) : screen(s) {
+    grid.SetUpdateCallback([this]{  // Use [this] to capture the class instance
+        this->UpdateUI();  // Call UpdateUI() directly on this instance
+    });
+    variables::currentPlayer = 1;
+    gameActive = true;
+    SetupUI();
+}
 
 
+void ultragrid_start_singleplayer() {
 
-    screen.Loop(renderer);
+    auto screen = ScreenInteractive::Fullscreen();
+    UltragridGameManagerMultiplayer game(screen);
+
+    screen.Loop(game.renderer);
 
     int grid4d[3][3][3][3];  // Declare the array first
-    gridcmp.get4DArray(grid4d);  // Pass the array to be filled
+    game.grid.get4DArray(grid4d);  // Pass the array to be filled
     largegrid_to_cout(grid4d);
 }

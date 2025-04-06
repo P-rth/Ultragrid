@@ -20,6 +20,9 @@ using namespace std::chrono_literals;
 using TicTacToeButton_Options = int[2];
 using TicTacToeButton_Options_Grid = int[3][3][2];
 
+
+#include "../headers/game_globals.hpp"
+
 class TicTacToeButton {
     private:
         int& gridValue;
@@ -46,10 +49,9 @@ class TicTacToeButton {
             auto buttonComponent = Button(" ", [this] {
                 bool isdisabled = options[0] == 1;  // Check current disabled state
                 if (!isdisabled && gridValue == 0) {
-                    gridValue = 1;
+                    gridValue = variables::currentPlayer;
                 }
-            },
-            ButtonOption::Animated(Color::Red)
+            }
             );
 
             buttonComponent |= ftxui::CatchEvent([this, buttonComponent](ftxui::Event event) {
@@ -107,8 +109,18 @@ class TicTacToeButton {
 
                 if (buttonComponent->Focused() && !isdisabled) {
                     if (click_release_edge && gridValue == 0) {
-                        gridValue = 1;
-                        content = content | bgcolor(ftxui::Color::Red);
+
+
+                        gridValue = variables::currentPlayer;
+                        std::cout << "Player " << gridValue << " clicked!" << std::endl;
+                        if (gridValue == 1) {
+                            content = content | bgcolor(ftxui::Color::Red);
+                        }
+                        else if (gridValue == 2) {
+                            content = content | bgcolor(ftxui::Color::Blue);
+                        }
+
+
                     }
                     else {
                         if (isPressed && gridValue == 0) {
@@ -251,12 +263,14 @@ class SmallGrid {
 
 class LargeGrid {
     private:
+
         SmallGrid* grids[3][3];
         int selected_x = 0;
         int selected_y = 0;
         Component mainComponent;
         int grids_val[3][3][3][3];
         TicTacToeButton_Options_Grid grid_options;
+
 
     public:
         LargeGrid() {
@@ -367,4 +381,17 @@ class LargeGrid {
         void takefocus_big(int x = 1, int y = 1,int z = 1,int w = 1) {
             grids[x][y]->takefocus_sm_grid(y,w);
         }
+
+        void setCurrentPlayer(int player) {
+            if (player == 1 || player == 2) {
+                variables::currentPlayer = player;
+            }
+            else{
+                throw std::invalid_argument("Invalid player");
+            }
+        }
+
+        void SetUpdateCallback(std::function<void()> callback) {
+                callbacks::onUpdate = callback;
+            }
 };
