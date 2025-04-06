@@ -4,6 +4,7 @@
 
 namespace variables {
     extern int currentPlayer;
+    extern int lastmove[2];
 }
 
 namespace callbacks {

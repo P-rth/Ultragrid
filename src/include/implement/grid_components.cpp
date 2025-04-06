@@ -6,8 +6,10 @@
 #include <cmath>
 #include "ftxui/component/component_base.hpp"
 #include "ftxui/component/component_options.hpp"
+#include <ftxui/screen/screen.hpp>
 #include <iostream>
 #include <ostream>
+#include "ftxui/component/screen_interactive.hpp"
 
 #include "ftxui/component/event.hpp"  // for Event definition
 #include "./headers/helpers.hpp"
@@ -34,6 +36,7 @@ class TicTacToeButton {
         TicTacToeButton_Options& options;
         ftxui::Box box_;
         ftxui::Component button;
+        ftxui::ScreenInteractive& screen;
 
         std::string getSymbolString(int value) const {
             switch(value) {
@@ -49,10 +52,10 @@ class TicTacToeButton {
             auto buttonComponent = Button(" ", [this] {
                 bool isdisabled = options[0] == 1;  // Check current disabled state
                 if (!isdisabled && gridValue == 0) {
+                    variables::lastmove[0] = row;  variables::lastmove[1] = col;
                     gridValue = variables::currentPlayer;
-                    if (callbacks::onUpdate) {
-                        callbacks::onUpdate();
-                    }
+
+                    screen.Post(Event::Custom);
                 }
             }
             );
@@ -94,7 +97,7 @@ class TicTacToeButton {
                 return false;
             });
 
-            return Renderer(buttonComponent, [this, buttonComponent] {
+            auto rendered = Renderer(buttonComponent, [this, buttonComponent] {
                 bool isdisabled = options[0] == 1;  // Check current disabled state
 
                 auto content = text(getSymbolString(gridValue)) |
@@ -112,11 +115,13 @@ class TicTacToeButton {
 
                 if (buttonComponent->Focused() && !isdisabled) {
                     if (click_release_edge && gridValue == 0) {
+                        bool grid_destroyed = 0;
                         gridValue = variables::currentPlayer;
-                        std::cout << "Player " << gridValue << " clicked!" << std::endl;
-                        if (callbacks::onUpdate) {
-                            callbacks::onUpdate();
-                        }
+
+                        variables::lastmove[0] = row;  variables::lastmove[1] = col;
+
+                        screen.Post(Event::Custom);
+
                         if (gridValue == 1) {
                             content = content | bgcolor(ftxui::Color::Red);
                         }
@@ -143,11 +148,21 @@ class TicTacToeButton {
                 click_release_edge = false;
                 return content | reflect(box_);
             });
+
+            return CatchEvent(rendered, [this](Event event) {
+                if (event == Event::Custom) {
+                    if (callbacks::onUpdate) {
+                        callbacks::onUpdate();
+                    }
+                    return true;
+                }
+                return false;
+            });
         }
 
     public:
-        TicTacToeButton(int& gridRef, int r, int c, TicTacToeButton_Options& opts)
-            : gridValue(gridRef), row(r), col(c), options(opts) {
+        TicTacToeButton(int& gridRef, int r, int c, TicTacToeButton_Options& opts, ftxui::ScreenInteractive& scr)
+            : gridValue(gridRef), row(r), col(c), options(opts), screen(scr) {
             button = makeButton();
         }
 
@@ -175,15 +190,17 @@ class SmallGrid {
         int bigicon = 0;
         TicTacToeButton_Options* buttonOptions;
         ftxui::Component gridComponent;
+        ftxui::ScreenInteractive& screen;
 
     public:
         int grid[3][3];
 
-        SmallGrid(TicTacToeButton_Options* values) : buttonOptions(values) {
+        SmallGrid(TicTacToeButton_Options* values, ftxui::ScreenInteractive& scr)
+            : buttonOptions(values), screen(scr) {
             for(int i = 0; i < 3; i++) {
                 for(int j = 0; j < 3; j++) {
                     grid[i][j] = 0;
-                    buttons[i][j] = new TicTacToeButton(grid[i][j], i, j, *buttonOptions);
+                    buttons[i][j] = new TicTacToeButton(grid[i][j], i, j, *buttonOptions, screen);
                 }
             }
 
@@ -245,10 +262,13 @@ class SmallGrid {
                 }
             }
             else if (bigicon == 1) {
-                container = Renderer([&]{ return nonWrappingParagraph(bigx); });
+                container = Renderer([&]{ return nonWrappingParagraph(bigx) | size(ftxui::WIDTH, ftxui::EQUAL, 11); });
             }
             else if (bigicon == 2) {
-                container = Renderer([&]{ return nonWrappingParagraph(bigx); });
+                container = Renderer([&]{ return nonWrappingParagraph(bigo) | size(ftxui::WIDTH, ftxui::EQUAL, 11); });
+            }
+            else if (bigicon == 3) {                  //tie
+                container = Renderer([&]{ return nonWrappingParagraph(bigtie) | size(ftxui::WIDTH, ftxui::EQUAL, 11); });
             }
 
             return container;
@@ -265,22 +285,21 @@ class SmallGrid {
 
 class LargeGrid {
     private:
-
         SmallGrid* grids[3][3];
         int selected_x = 0;
         int selected_y = 0;
         Component mainComponent;
         int grids_val[3][3][3][3];
         TicTacToeButton_Options_Grid grid_options;
-
+        ftxui::ScreenInteractive& screen;
 
     public:
-        LargeGrid() {
+        LargeGrid(ftxui::ScreenInteractive& scr) : screen(scr) {
             for(int i = 0; i < 3; i++) {
                 for(int j = 0; j < 3; j++) {
                     grid_options[i][j][0] = 0;
                     grid_options[i][j][1] = 0;
-                    grids[i][j] = new SmallGrid(&grid_options[i][j]);
+                    grids[i][j] = new SmallGrid(&grid_options[i][j], screen);
                 }
             }
 
@@ -300,8 +319,6 @@ class LargeGrid {
             int (*gridRef)[3] = smallGrid->getGridRef();
             return gridRef[smallRow][smallCol];
         }
-
-
 
         void get4DArray(int (*out)[3][3][3]) const {
             for(int i = 0; i < 3; i++) {

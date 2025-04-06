@@ -15,6 +15,9 @@ void ExecuteCommand(const std::string& command);
 //print largegrid to cout for debugging purposes
 void largegrid_to_cout(largegrid_val grid4d);
 
+
+int checkBoard(int board[3][3]);
+
 //function to print ascii art
 namespace ftxui{
 Elements Split(std::string the_text);
