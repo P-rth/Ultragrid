@@ -19,8 +19,9 @@
 using namespace ftxui;
 using namespace std::chrono_literals;
 
-using TicTacToeButton_Options = int[2];
-using TicTacToeButton_Options_Grid = int[3][3][2];
+using TicTacToeButton_Options = int[1];
+using TicTacToeButton_Options_Grid = int[3][3][1];         //basically a bool grid for disabled buttons
+                                                            //if disabled, the element is 1
 
 
 #include "../headers/game_globals.hpp"
@@ -37,6 +38,7 @@ class TicTacToeButton {
         ftxui::Box box_;
         ftxui::Component button;
         ftxui::ScreenInteractive& screen;
+        bool callback_used = false;
 
         std::string getSymbolString(int value) const {
             switch(value) {
@@ -56,6 +58,7 @@ class TicTacToeButton {
                     gridValue = variables::currentPlayer;
 
                     screen.Post(Event::Custom);
+                    callback_used = true;
                 }
             }
             );
@@ -121,6 +124,7 @@ class TicTacToeButton {
                         variables::lastmove[0] = row;  variables::lastmove[1] = col;
 
                         screen.Post(Event::Custom);
+                        callback_used = true;
 
                         if (gridValue == 1) {
                             content = content | bgcolor(ftxui::Color::Red);
@@ -150,10 +154,11 @@ class TicTacToeButton {
             });
 
             return CatchEvent(rendered, [this](Event event) {
-                if (event == Event::Custom) {
-                    if (callbacks::onUpdate) {
+                if (event == Event::Custom && callback_used) {                            //for safe execution of the callback function if button is deleted
+                    if (callbacks::onUpdate) {                           //elecute function when rendering is complete
                         callbacks::onUpdate();
                     }
+                    callback_used = false;
                     return true;
                 }
                 return false;
@@ -187,12 +192,13 @@ class SmallGrid {
         TicTacToeButton* buttons[3][3];
         int selected_x = 0;
         int selected_y = 0;
-        int bigicon = 0;
+
         TicTacToeButton_Options* buttonOptions;
         ftxui::Component gridComponent;
         ftxui::ScreenInteractive& screen;
 
     public:
+        int bigicon = 0;
         int grid[3][3];
 
         SmallGrid(TicTacToeButton_Options* values, ftxui::ScreenInteractive& scr)
@@ -230,7 +236,9 @@ class SmallGrid {
         void setbigicon(int bigicon_set) {
             this->bigicon = bigicon_set;
             gridComponent = makeGridComponent();
+            screen.Post(Event::Custom);
         }
+
 
     private:
         ftxui::Component makeGridComponent() {
@@ -290,6 +298,7 @@ class LargeGrid {
         int selected_y = 0;
         Component mainComponent;
         int grids_val[3][3][3][3];
+        int big_grid_values[3][3];
         TicTacToeButton_Options_Grid grid_options;
         ftxui::ScreenInteractive& screen;
 
@@ -298,7 +307,6 @@ class LargeGrid {
             for(int i = 0; i < 3; i++) {
                 for(int j = 0; j < 3; j++) {
                     grid_options[i][j][0] = 0;
-                    grid_options[i][j][1] = 0;
                     grids[i][j] = new SmallGrid(&grid_options[i][j], screen);
                 }
             }
@@ -318,6 +326,11 @@ class LargeGrid {
             auto* smallGrid = grids[bigRow][bigCol];
             int (*gridRef)[3] = smallGrid->getGridRef();
             return gridRef[smallRow][smallCol];
+        }
+
+        int getValue_big(int bigRow, int bigCol){
+         auto tmp = grids[bigRow][bigCol];
+         return tmp->bigicon;
         }
 
         void get4DArray(int (*out)[3][3][3]) const {
@@ -340,19 +353,19 @@ class LargeGrid {
 
         void setoptions(int bigRow, int bigCol, TicTacToeButton_Options op) {
             grid_options[bigRow][bigCol][0] = op[0];
-            grid_options[bigRow][bigCol][1] = op[1];
         }
 
-        void setoptions_invert(int bigRow, int bigCol, TicTacToeButton_Options op, TicTacToeButton_Options op_inv) {
+        void set_valid_grid(int bigRow, int bigCol) {
+            //int op[1] = {0};
+           // int op_inv[1] = {1};
+
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     if (i == bigRow && j == bigCol) {
-                        grid_options[i][j][0] = op[0];
-                        grid_options[i][j][1] = op[1];
+                        grid_options[i][j][0] = int {0};
                     }
                     else {
-                        grid_options[i][j][0] = op_inv[0];
-                        grid_options[i][j][1] = op_inv[1];
+                        grid_options[i][j][0] = int {1};
                     }
                 }
             }

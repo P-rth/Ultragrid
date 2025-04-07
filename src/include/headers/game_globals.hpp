@@ -10,3 +10,8 @@ namespace variables {
 namespace callbacks {
     extern std::function<void()> onUpdate;
 }
+
+enum class CustomEvent {
+    RefreshComponent,
+    BurronCallback,
+};

@@ -15,6 +15,7 @@ void ExecuteCommand(const std::string& command);
 //print largegrid to cout for debugging purposes
 void largegrid_to_cout(largegrid_val grid4d);
 
+void print_grid(int grid[3][3]);
 
 int checkBoard(int board[3][3]);
 

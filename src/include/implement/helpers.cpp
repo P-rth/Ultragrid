@@ -13,6 +13,14 @@ void ExecuteCommand(const std::string& command) {
     }
 }
 
+void print_grid(int grid[3][3]){
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            std::cout << grid[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+};
 
 void largegrid_to_cout(largegrid_val grid4d){
     for(int i = 0; i < 3; i++) {
