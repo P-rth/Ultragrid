@@ -112,12 +112,12 @@ class TicTacToeButton {
                     if (buttonComponent->Focused()) {
                         content = content | dim | bgcolor(ftxui::Color::Grey50);
                     } else {
-                        content = content | dim | bgcolor(ftxui::Color::Grey30);
+                        content = content | dim | bgcolor(ftxui::Color::Grey19);
                     }
                 }
 
-                if (buttonComponent->Focused() && !isdisabled) {
-                    if (click_release_edge && gridValue == 0) {
+                if (!isdisabled) {
+                    if (buttonComponent->Focused() && click_release_edge && gridValue == 0) {
                         bool grid_destroyed = 0;
                         gridValue = variables::currentPlayer;
 
@@ -137,8 +137,8 @@ class TicTacToeButton {
                         if (isPressed && gridValue == 0) {
                             content = content | bgcolor(ftxui::Color::OrangeRed1);
                         }
-                        else if (gridValue == 0) {
-                            content = content | bgcolor(ftxui::Color::GrayDark);
+                        else if (gridValue == 0 && buttonComponent->Focused()) {
+                            content = content | bgcolor(ftxui::Color::Grey42);
                         }
                         else if (gridValue == 1) {
                             content = content | color(ftxui::Color::Red);
@@ -382,8 +382,15 @@ class LargeGrid {
                     row->Add(grids[i][j]->getGridComponent());
 
                     if (j < 2) {
-                        row->Add(Renderer([]{
-                            return separatorDouble();
+                        row->Add(Renderer([&]{
+                            auto sep = separatorDouble();
+                            if (variables::currentPlayer == 1) {
+                                sep = sep | color(ftxui::Color::Red);
+                            }
+                            else if (variables::currentPlayer == 2) {
+                                sep = sep | color(ftxui::Color::Blue);
+                            }
+                            return sep;
                         }));
                     }
                 }
@@ -392,7 +399,14 @@ class LargeGrid {
 
                 if (i < 2) {
                     container->Add(Renderer([]{
-                        return separatorDouble();
+                        auto sep = separatorDouble();
+                        if (variables::currentPlayer == 1) {
+                            sep = sep | color(ftxui::Color::Red);
+                        }
+                        else if (variables::currentPlayer == 2) {
+                            sep = sep | color(ftxui::Color::Blue);
+                        }
+                        return sep;
                     }));
                 }
             }

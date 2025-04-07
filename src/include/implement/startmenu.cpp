@@ -75,13 +75,29 @@ int StartupUI() {
 
 
 
-    // -- Button -----------------------------------------------------------------
 
+
+    // -- coming soon -----------------------------------------------------------------
+
+    auto soon_container = Container::Vertical({
+    Button("Quit",[&]{screen.ExitLoopClosure()();}) | size(WIDTH, EQUAL, 15) | hcenter | vcenter,
+    });
+
+    auto soon =
+    Renderer(soon_container,[&] {
+        return vbox({
+            filler(),
+            paragraphAlignCenter("Soon™"),
+            filler(),
+            soon_container->Render(),
+            filler(),
+
+        }) | border;
+    });
 
     std::string button_label = "Quit";
     //std::function<void()> on_button_clicked_;
     auto button = Button(&button_label, screen.ExitLoopClosure());
-
 
 
 
@@ -121,7 +137,7 @@ int StartupUI() {
     start_buttons,
     });
 
-    auto lorel_ipsum =
+    auto ultragrid_tab =
     Renderer(start_container,[&] {
         return vbox({
             paragraphAlignCenter("Ultragrid - Play on a 3×3 grid of smaller boards, where each move determines the next board your opponent must play on"),
@@ -139,8 +155,9 @@ int StartupUI() {
     // -----------------------------------------------------------------
     auto tab_content = Container::Tab(
         {
-            button,
-            lorel_ipsum,
+            soon,
+            ultragrid_tab,      //default tab
+
         },
         &menu_selected);
 
