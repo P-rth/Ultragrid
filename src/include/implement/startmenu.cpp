@@ -43,9 +43,7 @@ int StartupUI() {
     const std::vector<std::string> menu_entries = {
         "NxN",
 
-        "UltraGrid",
-
-        "Settings",
+        "UltraGrid"
     };
 
     auto option = MenuOption().HorizontalAnimated();
@@ -222,9 +220,7 @@ int StartupUI() {
                 displayedart = art;
             } else if (menu_selected == 0) {
                 displayedart = art_nxn;
-            } else if (menu_selected == 2) {
-                displayedart = art_settings;
-            }
+            } 
 
         });
         // After updating the state, request a new frame to be drawn. This is done

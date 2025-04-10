@@ -1,3 +1,5 @@
+// All the splash screen arts which would be displayed on the main screen while selecting the mode.
+
 #pragma once
 
 #include <string>  // for string, basic_string, char_traits, operator+, to_string
@@ -23,7 +25,7 @@ R"(
 
 
 
-inline std::string art_settings =
+/* inline std::string art_settings =
 R"(
  
  
@@ -32,6 +34,7 @@ R"(
 ▄█ ██▄ ░█░ ░█░ █ █░▀█ █▄█ ▄█
  
 )";
+*/
 
 
 inline std::string art2 =

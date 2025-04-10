@@ -1,4 +1,10 @@
+// Compiler default libs
 #include <cstdlib>
+#include <iostream>
+#include <string>
+#include <random>
+
+// FTXUI libs
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -6,13 +12,10 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <ftxui/screen/string.hpp>
-#include <iostream>
-#include <string>
+
+// Game libs
 #include "./headers/helpers.hpp"
 #include "./headers/game_globals.hpp"
-
-
-
 #include "./implement/grid_components.cpp"
 
 using namespace ftxui;
@@ -186,3 +189,17 @@ void ultragrid_start_multiplayer() {
     game.grid.get4DArray(grid4d);  // Pass the array to be filled
     largegrid_to_cout(grid4d);
 }
+// TODO 
+// void UltragridGameManagerSingleplayer::UpdateUI() {
+
+// }
+// void ultragrid_start_singleplayer() {
+//     auto screen = ScreenInteractive::Fullscreen();
+//     int game_status = 0;
+//     UltragridGameManagerSingleplayer() game(screen,game_status);
+//     // Start the game loop
+//     int grid4d[3][3][3][3];
+//     screen.Loop(game.renderer);
+//     largegrid_to_cout(grid4d);
+//     std::cout << "Game status: " << game_status << std::endl;
+// }

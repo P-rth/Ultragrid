@@ -1,17 +1,20 @@
+// Compiler default libraries included for various fuctions 
+#include <cmath>
+#include <iostream>
+#include <ostream>
+
+// ftxui library included to use its functions
 #include "ftxui/component/component.hpp"       // for Menu, Renderer, Vertical
 #include "ftxui/component/mouse.hpp"              // for ftxui
 #include "ftxui/dom/elements.hpp"  // for text, Element, operator|, borderEmpty, inverted
 #include "ftxui/screen/color.hpp"  // for Color, Color::Blue, Color::Red
 #include "ftxui/dom/node.hpp"      // for Render
-#include <cmath>
 #include "ftxui/component/component_base.hpp"
-#include "ftxui/component/component_options.hpp"
 #include <ftxui/screen/screen.hpp>
-#include <iostream>
-#include <ostream>
 #include "ftxui/component/screen_interactive.hpp"
-
 #include "ftxui/component/event.hpp"  // for Event definition
+
+// Custom derived libraries used inside the game
 #include "./headers/helpers.hpp"
 #include "./headers/art.hpp"
 
@@ -155,7 +158,7 @@ class TicTacToeButton {
 
             return CatchEvent(rendered, [this](Event event) {
                 if (event == Event::Custom && callback_used) {                            //for safe execution of the callback function if button is deleted
-                    if (callbacks::onUpdate) {                           //elecute function when rendering is complete
+                    if (callbacks::onUpdate) {                           //execute function when rendering is complete
                         callbacks::onUpdate();
                     }
                     callback_used = false;
