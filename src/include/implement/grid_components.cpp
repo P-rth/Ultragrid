@@ -1,5 +1,6 @@
-// Compiler default libraries included for various fuctions 
+// Compiler default libraries included for various fuctions
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <ostream>
 
@@ -37,6 +38,7 @@ class TicTacToeButton {
         bool isHovered = false;
         bool isPressed = false;
         bool click_release_edge = false;
+        bool highlighted = false;
         TicTacToeButton_Options& options;
         ftxui::Box box_;
         ftxui::Component button;
@@ -60,7 +62,17 @@ class TicTacToeButton {
                     variables::lastmove[0] = row;  variables::lastmove[1] = col;
                     gridValue = variables::currentPlayer;
 
-                    screen.Post(Event::Custom);
+                    screen.Post([&] {
+
+                        if (callbacks::onUpdate) {                           //execute function when rendering is complete
+                            callbacks::onUpdate();
+                        }
+                        callback_used = false;
+
+                    });
+                    screen.Post(Event::Custom); // to update the screen
+
+
                     callback_used = true;
                 }
             }
@@ -115,7 +127,15 @@ class TicTacToeButton {
                     if (buttonComponent->Focused()) {
                         content = content | dim | bgcolor(ftxui::Color::Grey50);
                     } else {
-                        content = content | dim | bgcolor(ftxui::Color::Grey19);
+
+
+                        if (highlighted){
+                            content = content | bgcolor(ftxui::Color::DarkMagenta);
+
+                            highlighted = false;
+                        }else{
+                            content = content | dim | bgcolor(ftxui::Color::Grey19);
+                        }
                     }
                 }
 
@@ -126,7 +146,18 @@ class TicTacToeButton {
 
                         variables::lastmove[0] = row;  variables::lastmove[1] = col;
 
-                        screen.Post(Event::Custom);
+                        //screen.Post(Event::Custom);
+
+                        screen.Post([&] {
+
+                            if (callbacks::onUpdate) {                           //execute function when rendering is complete
+                                callbacks::onUpdate();
+                            }
+                            callback_used = false;
+
+                        });
+                        screen.Post(Event::Custom); // to update the screen
+
                         callback_used = true;
 
                         if (gridValue == 1) {
@@ -152,20 +183,18 @@ class TicTacToeButton {
                     }
                 }
 
+                if (highlighted){
+                    content = content | bgcolor(ftxui::Color::DarkMagenta);
+
+                    highlighted = false;}
+
                 click_release_edge = false;
-                return content | reflect(box_);
+                return content | reflect(box_);         //reflected id used so that the element can be updated easy
             });
 
-            return CatchEvent(rendered, [this](Event event) {
-                if (event == Event::Custom && callback_used) {                            //for safe execution of the callback function if button is deleted
-                    if (callbacks::onUpdate) {                           //execute function when rendering is complete
-                        callbacks::onUpdate();
-                    }
-                    callback_used = false;
-                    return true;
-                }
-                return false;
-            });
+
+
+            return rendered;
         }
 
     public:
@@ -180,6 +209,17 @@ class TicTacToeButton {
                 return;
             }
             button->TakeFocus();
+        }
+
+        void simulate_click(){
+            variables::lastmove[0] = row;  variables::lastmove[1] = col;
+            gridValue = variables::currentPlayer;
+            screen.Post(Event::Custom); // to update the screen
+        }
+
+        void highlight(){
+            highlighted = true;
+
         }
 
         ftxui::Component GetButton() const {
@@ -201,6 +241,7 @@ class SmallGrid {
         ftxui::ScreenInteractive& screen;
 
     public:
+
         int bigicon = 0;
         int grid[3][3];
 
@@ -216,13 +257,13 @@ class SmallGrid {
             gridComponent = makeGridComponent();
         }
 
-        ~SmallGrid() {
-            for(int i = 0; i < 3; i++) {
-                for(int j = 0; j < 3; j++) {
-                    delete buttons[i][j];
-                }
-            }
+
+
+        TicTacToeButton* (&getbuttons())[3][3] {
+            return buttons;
         }
+
+
 
         int (*getGridRef())[3] {
             return &grid[0];
@@ -443,4 +484,10 @@ class LargeGrid {
         void SetUpdateCallback(std::function<void()> callback) {
                 callbacks::onUpdate = callback;
             }
+
+        void makemove(int gx, int gy, int x, int y) {
+            TicTacToeButton* (&b)[3][3] = grids[gx][gy]->getbuttons();      // get the 3x3 array of buttons and assign it to b
+            b[x][y]->simulate_click();        //b is the array of tictactoe button elements then from it we simualte click
+            b[x][y]->highlight();
+        }
 };

@@ -36,17 +36,14 @@ class UltragridGameManagerMultiplayer {
 
         LargeGrid grid;
 
+        void SetupUI();
+
 
         UltragridGameManagerMultiplayer(ftxui::ScreenInteractive& s,int& gs) : screen(s), gamestatus(gs), grid(s) {
-            grid.SetUpdateCallback([this]{  // Use [this] to capture the class instance
-                this->UpdateUI();  // Call UpdateUI() directly on this instance
-            });
-            variables::currentPlayer = 1;
-            SetupUI();
         }
 
 
-    private:
+    protected:
         // Game state
         ftxui::ScreenInteractive& screen;
 
@@ -64,12 +61,93 @@ class UltragridGameManagerMultiplayer {
         ftxui::Component infoPanel;
 
         // UI setup
-        void SetupUI();
-        void UpdateUI();
+        virtual void UpdateUI();
+
+        // New helper functions
+        bool CheckAndUpdateSmallGrids() {
+            bool gridUpdated = false;
+            int grid4d[3][3][3][3];
+            grid.get4DArray(grid4d);
+
+            for (int gx = 0; gx < 3; gx++) {
+                for (int gy = 0; gy < 3; gy++) {
+                    int board[3][3];
+                    for (int x = 0; x < 3; x++){
+                        for (int y = 0; y < 3; y++){
+                            board[x][y] = grid4d[gx][gy][x][y];
+                        }
+                    }
+
+                    int result = checkBoard(board);
+                    if (result == 1 || result == 2 || result == 3) {
+                        grid.setbigicon_big(gx, gy, result);
+                        gridUpdated = true;
+                    }
+                }
+            }
+            return gridUpdated;
+        }
+
+        bool CheckGameEnd() {
+            int bigBoard[3][3];
+            for (int x = 0; x < 3; x++) {
+                for (int y = 0; y < 3; y++) {
+                    bigBoard[x][y] = grid.getValue_big(x, y);
+                }
+            }
+
+            int finalResult = checkBoard(bigBoard);
+            if (finalResult == 1 || finalResult == 2 || finalResult == 3) {
+                gamestatus = finalResult;
+                screen.ExitLoopClosure()();
+                return true;
+            }
+            return false;
+        }
+
+        void UpdateValidGrids() {
+            int enabled[1] = {0};
+            if (variables::lastmove[0] != -1 && variables::lastmove[1] != -1) {
+                int nextGrid_x = variables::lastmove[0];
+                int nextGrid_y = variables::lastmove[1];
+
+                if (grid.getValue_big(nextGrid_x, nextGrid_y) == 0) {
+                    grid.set_valid_grid(nextGrid_x, nextGrid_y);
+                } else {
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            if (grid.getValue_big(i, j) == 0) {
+                                grid.setoptions(i, j, enabled);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        void RefreshGridComponent(bool gridUpdated) {
+            if (gridUpdated) {
+                screen.Post([&]{
+                    gridcmp->Detach();
+                    gridcmp = grid.makeGridComponent();
+                    gridholder->Add(gridcmp);
+                });
+            }
+        }
+
+        void SwitchPlayer() {
+            variables::currentPlayer = (variables::currentPlayer == 1) ? 2 : 1;
+        }
     };
 
 
 void UltragridGameManagerMultiplayer::SetupUI() {
+    grid.SetUpdateCallback([this]{  // Use [this] to capture the class instance
+        this->UpdateUI();  // Call UpdateUI() directly on this instance
+    });
+
+    variables::currentPlayer = 1;
+
     options = Container::Vertical({
         Button("EXIT", screen.ExitLoopClosure()),
     });
@@ -99,78 +177,15 @@ void UltragridGameManagerMultiplayer::SetupUI() {
 
 //MAIN GAME LOGIC
 void UltragridGameManagerMultiplayer::UpdateUI() {
-    int enabled[1] = {0}; //put 0 in buttonoptions disabled
-    //std::cout << "Updating UI..." << std::endl;
+    bool gridUpdated = CheckAndUpdateSmallGrids();
 
-    int grid4d[3][3][3][3];
-    grid.get4DArray(grid4d);
-
-    bool gridUpdated = false;
-
-    // Check and update small grids
-    for (int gx = 0; gx < 3; gx++) {
-        for (int gy = 0; gy < 3; gy++) {
-            int board[3][3];
-            for (int x = 0; x < 3; x++){
-                for (int y = 0; y < 3; y++){
-                    board[x][y] = grid4d[gx][gy][x][y];
-                }
-            }
-
-            int result = checkBoard(board);
-            if (result == 1 || result == 2 || result == 3) {
-                grid.setbigicon_big(gx,gy,result);
-                gridUpdated = true;
-            }
-        }
+    if (CheckGameEnd()) {
+        return;
     }
 
-    // Check for win in the larger grid
-    int bigBoard[3][3];
-    for (int x = 0; x < 3; x++) {
-        for (int y = 0; y < 3; y++) {
-            bigBoard[x][y] = grid.getValue_big(x, y);
-        }
-    }
-
-    int finalResult = checkBoard(bigBoard);
-    if (finalResult == 1 || finalResult == 2 || finalResult == 3) {
-        gamestatus = finalResult;
-        screen.ExitLoopClosure()();
-    }
-
-
-    // Set valid grids based on last move
-    if (variables::lastmove[0] != -1 && variables::lastmove[1] != -1) {
-        int nextGrid_x = variables::lastmove[0];
-        int nextGrid_y = variables::lastmove[1];
-
-        // Check if the target grid is already won
-        if (grid.getValue_big(nextGrid_x, nextGrid_y) == 0) {
-            // Grid is still playable - enable only this grid
-            grid.set_valid_grid(nextGrid_x, nextGrid_y);
-        } else {
-            // Enable all unfinished grids if target grid is completed
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    if (grid.getValue_big(i, j) == 0) {
-                        grid.setoptions(i, j, enabled);
-                    }
-                }
-            }
-        }
-    }
-
-    // Update UI if needed
-    if (gridUpdated) {
-        gridcmp->Detach();
-        gridcmp = grid.makeGridComponent();
-        gridholder->Add(gridcmp);
-        std::cout << "UI...UPDATED" << std::endl;
-    }
-
-    // Switch players
-    variables::currentPlayer = (variables::currentPlayer == 1) ? 2 : 1;
+    UpdateValidGrids();
+    RefreshGridComponent(gridUpdated);
+    SwitchPlayer();
 }
 
 
@@ -180,6 +195,96 @@ void ultragrid_start_multiplayer() {
     auto screen = ScreenInteractive::Fullscreen();
     int game_status = 0;                             //gamestatus 0 = incomplete/abort; 1 = X win; 2 = O win; 3 = Tie;
     UltragridGameManagerMultiplayer game(screen,game_status);
+    game.SetupUI();
+
+    screen.Loop(game.renderer);
+
+    std::cout << game_status << std::endl;
+
+
+}
+
+
+
+
+class UltragridGameManagerSingleplayer : public UltragridGameManagerMultiplayer {
+protected:
+    bool MakeAIMove() {
+        int grid4d[3][3][3][3];
+        grid.get4DArray(grid4d);
+        bool moveMade = false;
+        int nextGrid_x = variables::lastmove[0];
+        int nextGrid_y = variables::lastmove[1];
+
+        // Try specific grid first
+        if (nextGrid_x != -1 && nextGrid_y != -1 &&
+            grid.getValue_big(nextGrid_x, nextGrid_y) == 0) {
+            for (int x = 0; x < 3 && !moveMade; x++) {
+                for (int y = 0; y < 3 && !moveMade; y++) {
+                    if (grid4d[nextGrid_x][nextGrid_y][x][y] == 0) {
+                        grid.makemove(nextGrid_x, nextGrid_y, x, y);
+                        variables::lastmove[0] = x;
+                        variables::lastmove[1] = y;
+                        moveMade = true;
+                    }
+                }
+            }
+        }
+
+        // Try any available grid if needed
+        if (!moveMade) {
+            for (int gx = 0; gx < 3 && !moveMade; gx++) {
+                for (int gy = 0; gy < 3 && !moveMade; gy++) {
+                    if (grid.getValue_big(gx, gy) == 0) {
+                        for (int x = 0; x < 3 && !moveMade; x++) {
+                            for (int y = 0; y < 3 && !moveMade; y++) {
+                                if (grid4d[gx][gy][x][y] == 0) {
+                                    grid.makemove(gx, gy, x, y);
+                                    variables::lastmove[0] = x;
+                                    variables::lastmove[1] = y;
+                                    moveMade = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return moveMade;
+    }
+
+public:
+    UltragridGameManagerSingleplayer(ftxui::ScreenInteractive& s, int& gs)
+        : UltragridGameManagerMultiplayer(s, gs) {
+    }
+
+    void UpdateUI() override {
+        bool gridUpdated = CheckAndUpdateSmallGrids();
+
+        if (CheckGameEnd()) {
+            return;
+        }
+
+        SwitchPlayer();
+
+        if (variables::currentPlayer == 2) {
+            MakeAIMove();
+            this->UpdateUI();
+            return;
+        }
+
+        UpdateValidGrids();
+        RefreshGridComponent(gridUpdated);
+
+    }
+};
+
+void ultragrid_start_singleplayer() {
+
+    auto screen = ScreenInteractive::Fullscreen();
+    int game_status = 0;                             //gamestatus 0 = incomplete/abort; 1 = X win; 2 = O win; 3 = Tie;
+    UltragridGameManagerSingleplayer game(screen,game_status);
+    game.SetupUI();
 
     screen.Loop(game.renderer);
 
@@ -188,18 +293,5 @@ void ultragrid_start_multiplayer() {
     int grid4d[3][3][3][3];  // Declare the array first
     game.grid.get4DArray(grid4d);  // Pass the array to be filled
     largegrid_to_cout(grid4d);
-}
-// TODO 
-// void UltragridGameManagerSingleplayer::UpdateUI() {
 
-// }
-// void ultragrid_start_singleplayer() {
-//     auto screen = ScreenInteractive::Fullscreen();
-//     int game_status = 0;
-//     UltragridGameManagerSingleplayer() game(screen,game_status);
-//     // Start the game loop
-//     int grid4d[3][3][3][3];
-//     screen.Loop(game.renderer);
-//     largegrid_to_cout(grid4d);
-//     std::cout << "Game status: " << game_status << std::endl;
-// }
+}

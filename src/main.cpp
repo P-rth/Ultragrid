@@ -17,10 +17,15 @@ int main() {
 
 
     switch (gamemodeselection) {
+        case 11:
+            ultragrid_start_singleplayer();
+            break;
         case 12:
             ultragrid_start_multiplayer();
+            break;
         default:
             std::cout<<"Soon™"<<std::endl;
+            break;
 
     }
 
