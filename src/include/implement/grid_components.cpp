@@ -1,4 +1,4 @@
-//#pragma once
+#pragma once
 // Compiler default libraries included for various fuctions
 #include <cmath>
 #include <cstdlib>
