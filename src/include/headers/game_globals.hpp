@@ -5,6 +5,7 @@
 namespace variables {
     extern int currentPlayer;
     extern int lastmove[2];
+    extern int difficulty;
 }
 
 namespace callbacks {

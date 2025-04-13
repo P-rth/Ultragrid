@@ -1,3 +1,4 @@
+//#pragma once
 // Compiler default libraries included for various fuctions
 #include <cmath>
 #include <cstdlib>
@@ -489,5 +490,10 @@ class LargeGrid {
             TicTacToeButton* (&b)[3][3] = grids[gx][gy]->getbuttons();      // get the 3x3 array of buttons and assign it to b
             b[x][y]->simulate_click();        //b is the array of tictactoe button elements then from it we simualte click
             b[x][y]->highlight();
+            variables::lastmove[0] = x;
+            variables::lastmove[1] = y;
+
         }
+
+
 };

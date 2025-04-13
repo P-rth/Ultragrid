@@ -1,5 +1,6 @@
 // Compiler default libs
 #include <cstdlib>
+#include <ftxui/dom/linear_gradient.hpp>
 #include <iostream>
 #include <string>
 #include <random>
@@ -17,13 +18,15 @@
 #include "./headers/helpers.hpp"
 #include "./headers/game_globals.hpp"
 #include "./implement/grid_components.cpp"
+#include "./headers/ultragrid.hpp"
+#include "./headers/ultragrid_ai.hpp"
 
 using namespace ftxui;
 using namespace std::chrono_literals;
 
-
 class UltragridGameManagerMultiplayer {
     public:
+
         // Core game functions
         void StartGame();
         int* ActiveSmallgrid();
@@ -36,12 +39,10 @@ class UltragridGameManagerMultiplayer {
 
         LargeGrid grid;
 
-        void SetupUI();
-
+        void SetupUI(bool is_singleplayer);
 
         UltragridGameManagerMultiplayer(ftxui::ScreenInteractive& s,int& gs) : screen(s), gamestatus(gs), grid(s) {
         }
-
 
     protected:
         // Game state
@@ -49,8 +50,6 @@ class UltragridGameManagerMultiplayer {
 
         Component gridcmp;
         Component gridholder;
-
-
 
         Component options;
         Component main_container;
@@ -140,40 +139,94 @@ class UltragridGameManagerMultiplayer {
         }
     };
 
-
-void UltragridGameManagerMultiplayer::SetupUI() {
-    grid.SetUpdateCallback([this]{  // Use [this] to capture the class instance
-        this->UpdateUI();  // Call UpdateUI() directly on this instance
+void UltragridGameManagerMultiplayer::SetupUI(bool is_sp) {
+    grid.SetUpdateCallback([this]{
+        this->UpdateUI();
     });
 
     variables::currentPlayer = 1;
 
-    options = Container::Vertical({
-        Button("EXIT", screen.ExitLoopClosure()),
+    // Store is_sp as class member if needed
+    bool is_singleplayer = is_sp;
+
+    // Create buttons
+    auto exit_button = Button("Exit", screen.ExitLoopClosure());
+    auto restart_button = Button("Restart", [this, is_singleplayer] {
+        screen.ExitLoopClosure()();
+        if (is_singleplayer) {
+            ultragrid_start_singleplayer();
+        } else {
+            ultragrid_start_multiplayer();
+        }
+    });
+
+    auto diffculty = Slider("", &variables::difficulty, 0, 2, 1);
+
+    // Create a title component
+    auto title = Renderer([] {
+        return text("Ultragrid") | bold | color(LinearGradient().Stop(Color::DeepPink1).Stop(Color::DeepSkyBlue1));
+    });
+
+    // Create player info component
+    auto player_info = Renderer([this, is_singleplayer,diffculty] {
+        if(is_singleplayer){
+            auto a = nonWrappingParagraph(happy);
+            return vbox({
+                text("Singleplayer ") | color(Color::Green),
+                filler(),
+                a,
+                filler(),
+            }) | flex;
+        }
+        else{
+            auto a = nonWrappingParagraph("hi");
+            if(variables::currentPlayer == 1 ){
+                a = nonWrappingParagraph(smallx) | color(Color::Red);
+            }
+            else {
+                a = nonWrappingParagraph(smallo) | color(Color::Blue);
+            }
+            return vbox({
+                text("Current Player: ") | color(Color::Green),
+                filler(),
+                a,
+                filler()
+            }) | flex;
+        }
     });
 
     gridcmp = grid.getComponent();
     gridholder = Container::Vertical({gridcmp});
 
-    main_container = Container::Horizontal({
+    // Create components vector for vertical container
+    Components vertical_components = {
+        title,
+        Renderer([]{return separator();}),
+        player_info,
+        diffculty,
+        Renderer([]{return filler();}),
+        exit_button,
+        restart_button,
+    };
+
+    // Create components vector for horizontal container
+    Components horizontal_components = {
         gridholder,
-        Renderer([&]{return separatorEmpty(); }),
-        options,
-    });
+        Renderer([]{return separatorEmpty();}),
+        Renderer([]{return separatorEmpty();}),
+        Container::Vertical(vertical_components) | size(WIDTH, LESS_THAN, 30)
+    };
+
+    main_container = Container::Horizontal(horizontal_components);
 
     renderer = Renderer(main_container, [&] {
         return vbox({
-            text("Tic-Tac-Toe") | bold | center,
-            separator(),
-            vbox({
-                filler(),
-                main_container->Render() | hcenter,
-                filler(),
-            }) |flex | border,
-        }) | flex_grow;
+            filler(),
+            main_container->Render() | hcenter,
+            filler(),
+        }) | flex;
     });
 }
-
 
 //MAIN GAME LOGIC
 void UltragridGameManagerMultiplayer::UpdateUI() {
@@ -188,75 +241,28 @@ void UltragridGameManagerMultiplayer::UpdateUI() {
     SwitchPlayer();
 }
 
-
-
 void ultragrid_start_multiplayer() {
 
     auto screen = ScreenInteractive::Fullscreen();
     int game_status = 0;                             //gamestatus 0 = incomplete/abort; 1 = X win; 2 = O win; 3 = Tie;
     UltragridGameManagerMultiplayer game(screen,game_status);
-    game.SetupUI();
+    game.SetupUI(false);  //is_singleplayer = false
 
     screen.Loop(game.renderer);
 
     std::cout << game_status << std::endl;
 
-
 }
-
-
-
 
 class UltragridGameManagerSingleplayer : public UltragridGameManagerMultiplayer {
 protected:
-    bool MakeAIMove() {
-        int grid4d[3][3][3][3];
-        grid.get4DArray(grid4d);
-        bool moveMade = false;
-        int nextGrid_x = variables::lastmove[0];
-        int nextGrid_y = variables::lastmove[1];
-
-        // Try specific grid first
-        if (nextGrid_x != -1 && nextGrid_y != -1 &&
-            grid.getValue_big(nextGrid_x, nextGrid_y) == 0) {
-            for (int x = 0; x < 3 && !moveMade; x++) {
-                for (int y = 0; y < 3 && !moveMade; y++) {
-                    if (grid4d[nextGrid_x][nextGrid_y][x][y] == 0) {
-                        grid.makemove(nextGrid_x, nextGrid_y, x, y);
-                        variables::lastmove[0] = x;
-                        variables::lastmove[1] = y;
-                        moveMade = true;
-                    }
-                }
-            }
-        }
-
-        // Try any available grid if needed
-        if (!moveMade) {
-            for (int gx = 0; gx < 3 && !moveMade; gx++) {
-                for (int gy = 0; gy < 3 && !moveMade; gy++) {
-                    if (grid.getValue_big(gx, gy) == 0) {
-                        for (int x = 0; x < 3 && !moveMade; x++) {
-                            for (int y = 0; y < 3 && !moveMade; y++) {
-                                if (grid4d[gx][gy][x][y] == 0) {
-                                    grid.makemove(gx, gy, x, y);
-                                    variables::lastmove[0] = x;
-                                    variables::lastmove[1] = y;
-                                    moveMade = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return moveMade;
-    }
 
 public:
     UltragridGameManagerSingleplayer(ftxui::ScreenInteractive& s, int& gs)
         : UltragridGameManagerMultiplayer(s, gs) {
     }
+
+    bool MakeAIMove();
 
     void UpdateUI() override {
         bool gridUpdated = CheckAndUpdateSmallGrids();
@@ -279,12 +285,17 @@ public:
     }
 };
 
+bool UltragridGameManagerSingleplayer::MakeAIMove() {
+    return UltragridAI::MakeMove(variables::difficulty, grid);
+}
+
 void ultragrid_start_singleplayer() {
 
     auto screen = ScreenInteractive::Fullscreen();
     int game_status = 0;                             //gamestatus 0 = incomplete/abort; 1 = X win; 2 = O win; 3 = Tie;
     UltragridGameManagerSingleplayer game(screen,game_status);
-    game.SetupUI();
+
+    game.SetupUI(true);  //is_singleplayer = true
 
     screen.Loop(game.renderer);
 

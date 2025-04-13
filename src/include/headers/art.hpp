@@ -43,6 +43,23 @@ R"(
 █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█ █▄█ █░█
 )";
 
+inline std::string smallx =
+R"(
+▀▄▀
+█░█
+)";
+
+inline std::string smallo =
+R"(
+█▀█
+█▄█
+)";
+
+inline std::string happy =
+R"(
+\(ᵔᵕᵔ)/
+)";
+
 
 
 inline std::string bigx =
