@@ -48,6 +48,7 @@ void RenderStartScreen() {
     std::cout << std::flush;
     std::string command = "echo -e \"" + out_screen_string + "\" | tte scattered";
     system(command.c_str());
+    std::cout << std::flush;
     std::cout << "Press Enter to continue";
     std::cin.get();
     std::cout << "\033[2J\033[1;1H";

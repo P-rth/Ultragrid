@@ -220,7 +220,7 @@ int StartupUI() {
                 displayedart = art;
             } else if (menu_selected == 0) {
                 displayedart = art_nxn;
-            } 
+            }
 
         });
         // After updating the state, request a new frame to be drawn. This is done

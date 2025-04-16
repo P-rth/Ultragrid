@@ -2,10 +2,28 @@
 #include "headers/startmenu.hpp"
 #include "headers/ultragrid.hpp"
 #include <iostream>
+#include <cstring>
 
-int main() {
+void help(){
+    std::cout << "Invalid arguments" << std::endl;
+        std::cout << "to enable splash screen use -" << std::endl;
+        std::cout << "./ttt splash" << std::endl;
+        std::cout << "terminal text effects should be installed - \n https://github.com/ChrisBuilds/terminaltexteffects" << std::endl;
+        exit(1);
+}
 
-    //RenderStartScreen();
+
+
+int main(int argc, char* argv[]) {
+    if(argc == 2) {  // Check for exactly one argument
+        if(strcmp(argv[1], "splash") == 0) {  // Check argv[1], not argv[0]
+            RenderStartScreen();
+        }
+        else {
+            help();
+        }
+    }
+
 
     auto gamemodeselection = StartupUI();
 

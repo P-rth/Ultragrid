@@ -20,6 +20,7 @@
 #include "./implement/grid_components.cpp"
 #include "./headers/ultragrid.hpp"
 #include "./headers/ultragrid_ai.hpp"
+#include "./headers/endscreen.hpp"
 
 using namespace ftxui;
 using namespace std::chrono_literals;
@@ -253,6 +254,8 @@ void ultragrid_start_multiplayer() {
     screen.Loop(game.renderer);
 
     std::cout << game_status << std::endl;
+    EndScreenUI(12, game_status);
+
 
 }
 
@@ -303,8 +306,6 @@ void ultragrid_start_singleplayer() {
 
     std::cout << game_status << std::endl;
 
-    int grid4d[3][3][3][3];  // Declare the array first
-    game.grid.get4DArray(grid4d);  // Pass the array to be filled
-    largegrid_to_cout(grid4d);
+    EndScreenUI(11, game_status);
 
 }
