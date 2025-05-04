@@ -1,3 +1,7 @@
+### **Ultragrid** is an enhanced, customizable version of the classic Tic-Tac-Toe game that supports variable board sizes, advanced gameplay modes, and a modern terminal-based user interface using C++ and FTXUI.
+
+
+
 UltraGrid reimagines Tic-Tac-Toe with:  
 - **Nested Grid System**: 3×3 grid of smaller 3×3 boards  
 - **Dynamic UI/UX**: Animated terminal interface with color gradients  
@@ -13,12 +17,6 @@ UltraGrid reimagines Tic-Tac-Toe with:
 ## **GAMEPLAY**  
 
 [![Demo](https://img.youtube.com/vi/T2iYbXHhSvk/0.jpg)](https://www.youtube.com/watch?v=T2iYbXHhSvk)
-main menu
-![main menu](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/menu.png)
-multiplayer mode
-![multiplayer](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/multiplayer.png)
-singleplayer mode
-![singleplayer](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/singleplayer.png)
 
 ## **DIRECTORY STRUCTURE & FILE FUNCTIONS**  
 
