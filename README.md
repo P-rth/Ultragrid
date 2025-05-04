@@ -12,7 +12,13 @@ UltraGrid reimagines Tic-Tac-Toe with:
 
 ## **GAMEPLAY**  
 
-[![Video Title](https://img.youtube.com/vi/T2iYbXHhSvk/0.jpg)](https://www.youtube.com/watch?v=T2iYbXHhSvk)
+[![Demo](https://img.youtube.com/vi/T2iYbXHhSvk/0.jpg)](https://www.youtube.com/watch?v=T2iYbXHhSvk)
+main menu
+![main menu](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/menu.png)
+multiplayer mode
+![multiplayer](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/multiplayer.png)
+singleplayer mode
+![singleplayer](https://raw.githubusercontent.com/P-rth/Ultragrid/refs/heads/main/screenshots/singleplayer.png)
 
 ## **DIRECTORY STRUCTURE & FILE FUNCTIONS**  
 
