@@ -1,24 +1,3 @@
-
-# ULTRAGRID: ULTIMATE TIC-TAC-TOE PROJECT DOCUMENTATION
-**SOFTWARE DEVELOPMENT LAB-2**  
-**JAYPEE INSTITUTE OF INFORMATION TECHNOLOGY, NOIDA**  
-
----
-
-## **SUBMITTED BY**  
-- Piyush Mishra (2408020013)  
-- Parth Sahani (2408020010)  
-- Aditya Bhushan Nagar (2408020019)  
-- Kaustubh Bist (2408020012)  
-
----
-
-## **ACKNOWLEDGEMENT**  
-We extend our sincere gratitude to **Ms. Diksha Chawla** for her invaluable guidance and support throughout this project. Her expertise in software design and patience in addressing technical challenges were pivotal to the project’s success.
-
----
-
-## **PROJECT OVERVIEW**  
 UltraGrid reimagines Tic-Tac-Toe with:  
 - **Nested Grid System**: 3×3 grid of smaller 3×3 boards  
 - **Dynamic UI/UX**: Animated terminal interface with color gradients  
@@ -31,7 +10,9 @@ UltraGrid reimagines Tic-Tac-Toe with:
 - Multi-threaded animations  
 - Modular architecture for future expansion  
 
----
+## **GAMEPLAY**  
+
+[![Video Title](https://img.youtube.com/vi/T2iYbXHhSvk/0.jpg)](https://www.youtube.com/watch?v=T2iYbXHhSvk)
 
 ## **DIRECTORY STRUCTURE & FILE FUNCTIONS**  
 
